@@ -1,0 +1,3 @@
+[submodule "aiken"]
+	path = aiken
+	url = https://github.com/txpipe/aiken
