@@ -1,5 +1,5 @@
-export SRC_LIB_FILE=libaiken-jna-wrapper.dylib
-export TARGET_LIB_FILE=darwin-aarch64_libaiken-jna-wrapper.dylib
+export SRC_LIB_FILE=libaiken_jna_wrapper.dylib
+export TARGET_LIB_FILE=darwin-aarch64_libaiken_jna_wrapper.dylib
 export NATIVE_FOLDER=darwin-aarch64
 
 cd rust
