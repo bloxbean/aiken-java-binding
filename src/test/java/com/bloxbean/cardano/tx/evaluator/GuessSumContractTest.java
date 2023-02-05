@@ -3,18 +3,16 @@ package com.bloxbean.cardano.tx.evaluator;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.address.AddressService;
 import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
-import com.bloxbean.cardano.client.api.UtxoSupplier;
 import com.bloxbean.cardano.client.api.exception.ApiException;
-import com.bloxbean.cardano.client.api.exception.ApiRuntimeException;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.backend.api.BackendService;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
-import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
 import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.backend.model.EvaluationResult;
+import com.bloxbean.cardano.client.backend.model.TransactionContent;
 import com.bloxbean.cardano.client.coinselection.UtxoSelectionStrategy;
 import com.bloxbean.cardano.client.coinselection.impl.LargestFirstUtxoSelectionStrategy;
 import com.bloxbean.cardano.client.common.model.Networks;
@@ -27,6 +25,7 @@ import com.bloxbean.cardano.client.function.helper.*;
 import com.bloxbean.cardano.client.function.helper.model.ScriptCallContext;
 import com.bloxbean.cardano.client.transaction.spec.*;
 import com.bloxbean.cardano.client.transaction.util.CostModelUtil;
+import com.bloxbean.cardano.client.util.JsonUtil;
 import com.bloxbean.cardano.client.util.Tuple;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
@@ -47,16 +46,16 @@ public class GuessSumContractTest  {
     Account sender = new Account(Networks.testnet(), senderMnemonic);
     String senderAddress = sender.baseAddress();
 
-    String bf_projectId = "";
+    String bf_projectId = "preprodcE7NkLLZvWCAdXKgjARcBZRSn1jeZcQR";
     BackendService backendService =
-            new BFBackendService(Constants.BLOCKFROST_TESTNET_URL, bf_projectId);
+            new BFBackendService(Constants.BLOCKFROST_PREPROD_URL, bf_projectId);
 
     private CachedUtxoSupplier utxoSupplier = new CachedUtxoSupplier(backendService.getUtxoService());
     private ProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
 
     @Test
     public void invokeContract() throws Exception {
-//        System.out.println(senderAddress);
+        System.out.println(senderAddress);
         //Sum Script
         PlutusV2Script sumScript =
                 PlutusV2Script.builder()
@@ -65,11 +64,11 @@ public class GuessSumContractTest  {
         String scriptAddress = AddressService.getInstance().getEntAddress(sumScript, Networks.testnet()).toBech32();
 
         //1. Create a transaction with reference script output (CIP-33)
-//        Tuple<String, Integer> refScriptOutputTx = createScriptRefOutput(sumScript, scriptAddress);
-//        Utxo refScriptUtxo = Utxo.builder()
-//                .txHash(refScriptOutputTx._1)
-//                .outputIndex(refScriptOutputTx._2)
-//                .build();
+        Tuple<String, Integer> refScriptOutputTx = createScriptRefOutput(sumScript, scriptAddress);
+        Utxo refScriptUtxo = Utxo.builder()
+                .txHash(refScriptOutputTx._1)
+                .outputIndex(refScriptOutputTx._2)
+                .build();
 
         //2. Lock fund with a datum (inlineDatum)
         PlutusData datum = BigIntPlutusData.of(8);
@@ -127,10 +126,11 @@ public class GuessSumContractTest  {
         Transaction signedTx = txBuilderContext
                 .buildAndSign(contractTxBuilder, signer);
 
-//        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
-//        System.out.println("Unlock Tx: " + result);
+        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
+        System.out.println("Unlock Tx: " + result);
 //
-//        assertTrue(result.isSuccessful());
+        assertTrue(result.isSuccessful());
+        waitForTransaction(result);
 
     }
 
@@ -149,11 +149,11 @@ public class GuessSumContractTest  {
         Transaction signedTx = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
                 .buildAndSign(lockFundTxBuilder, signerFrom(sender));
 
-//        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
-//        System.out.println("Lock Tx: " + result);
+        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
+        System.out.println("Lock Tx: " + result);
 
-//        assertTrue(result.isSuccessful());
-//        waitForTransactionHash(result);
+        assertTrue(result.isSuccessful());
+        waitForTransaction(result);
     }
 
     private Tuple<String, Integer> createScriptRefOutput(PlutusV2Script sumScript, String scriptAddress) throws ApiException, CborSerializationException {
@@ -170,14 +170,16 @@ public class GuessSumContractTest  {
         Transaction signedTx = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
                 .buildAndSign(scriptRefTxBuilder, SignerProviders.signerFrom(sender));
 
-        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
-        System.out.println("RefScript Tx: " + result);
+//        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
+//        System.out.println("RefScript Tx: " + result);
+//
+//        assertTrue(result.isSuccessful());
+//        waitForTransaction(result);
 
-        assertTrue(result.isSuccessful());
-//        waitForTransactionHash(result);
-
-        String refScriptTxHash = "4a1eb4e4bd7f82c4a8a717eaf03041d2a3c2c365fae9933e396d73f083ab8e62";
+        String refScriptTxHash = "26392aea63121fe27b6833dd5fea7a37ed10c04b2a562758ea77968809795e10";
         int refScriptOutputIndex = 0;
+//        String refScriptTxHash = result.getValue();
+//        int refScriptOutputIndex = 0;
 
         return new Tuple<>(refScriptTxHash, refScriptOutputIndex);
     }
@@ -189,6 +191,28 @@ public class GuessSumContractTest  {
              return evalResults.getValue().get(0).getExUnits();
         } else {
                 return null;
+        }
+    }
+
+    private void waitForTransaction(Result<String> result) {
+        try {
+            if (result.isSuccessful()) { //Wait for transaction to be mined
+                int count = 0;
+                while (count < 60) {
+                    Result<TransactionContent> txnResult = backendService.getTransactionService().getTransaction(result.getValue());
+                    if (txnResult.isSuccessful()) {
+                        System.out.println(JsonUtil.getPrettyJson(txnResult.getValue()));
+                        break;
+                    } else {
+                        System.out.println("Waiting for transaction to be mined ....");
+                    }
+
+                    count++;
+                    Thread.sleep(2000);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
