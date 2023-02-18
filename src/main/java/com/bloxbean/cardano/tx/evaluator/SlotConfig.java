@@ -1,10 +1,14 @@
 package com.bloxbean.cardano.tx.evaluator;
 
 import com.sun.jna.Structure;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.io.Closeable;
 import java.io.IOException;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Structure.FieldOrder({"slot_length", "zero_slot", "zero_time"})
 public class SlotConfig extends Structure implements Closeable {
     public static class SlotConfigByValue extends SlotConfig implements Structure.ByValue { }

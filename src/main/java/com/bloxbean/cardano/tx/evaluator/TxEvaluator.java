@@ -12,18 +12,28 @@ import com.bloxbean.cardano.client.exception.CborSerializationException;
 import com.bloxbean.cardano.client.transaction.spec.*;
 import com.bloxbean.cardano.client.transaction.util.CborSerializationUtil;
 import com.bloxbean.cardano.client.util.HexUtil;
-import com.bloxbean.cardano.client.util.Tuple;
 import com.bloxbean.cardano.tx.evaluator.jna.CardanoJNAUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TxEvaluator {
-    private CachedUtxoSupplier utxoSupplier;
+    private Set<Utxo> utxos;
+    private SlotConfig slotConfig;
 
-    public TxEvaluator(CachedUtxoSupplier cachedUtxoSupplier) {
-        this.utxoSupplier = cachedUtxoSupplier;
+    public TxEvaluator(Set<Utxo> utxos) {
+        this.utxos = utxos;
+        this.slotConfig = getDefaultSlotConfig();
+    }
+
+    public TxEvaluator(Set<Utxo> utxos, SlotConfig slotConfig) {
+        this.utxos = utxos;
+        this.slotConfig = new SlotConfig.SlotConfigByValue();
+        this.slotConfig.zero_slot = slotConfig.zero_slot;
+        this.slotConfig.zero_time = slotConfig.zero_time;
+        this.slotConfig.slot_length = slotConfig.slot_length;
     }
 
     public List<Redeemer> evaluateTx(Transaction transaction, CostMdls costMdls) {
@@ -54,7 +64,7 @@ public class TxEvaluator {
             }
         });
 
-        SlotConfig.SlotConfigByValue slotConfig = getSlotConfig();
+        SlotConfig.SlotConfigByValue slotConfig = getDefaultSlotConfig();
         try {
             String costMdlsHex = HexUtil.encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
             String response = CardanoJNAUtil.eval_phase_two_raw(transaction.serializeToHex(),
@@ -88,7 +98,7 @@ public class TxEvaluator {
         }
     }
 
-    private SlotConfig.SlotConfigByValue getSlotConfig() {
+    private SlotConfig.SlotConfigByValue getDefaultSlotConfig() {
         SlotConfig.SlotConfigByValue slotConfig = new SlotConfig.SlotConfigByValue();
         slotConfig.zero_time = 1660003200000L;
         slotConfig.zero_slot = 0;
@@ -99,12 +109,13 @@ public class TxEvaluator {
     private List<TransactionOutput> resolveTxInputs(List<TransactionInput> transactionInputs, List<PlutusScript> plutusScripts) {
         return transactionInputs.stream().map(input -> {
             try {
-                Tuple<String, Utxo> tuple = utxoSupplier.getUtxo(input.getTransactionId(), input.getIndex());
-                if (tuple == null)
-                    throw new IllegalStateException("Utxo not found for " + input);
 
-                String address = tuple._1;
-                Utxo utxo = tuple._2;
+                Utxo utxo = utxos.stream().filter(_utxo -> input.getTransactionId().equals(_utxo.getTxHash()) && input.getIndex() == _utxo.getOutputIndex())
+                        .findFirst()
+                        .orElseThrow();
+
+                String address = utxo.getAddress();
+
                 //Calculate script ref
                 PlutusScript plutusScript = plutusScripts.stream().filter(script -> {
                     try {
@@ -133,7 +144,7 @@ public class TxEvaluator {
     }
 
     public String evaluateTx(String txnHex, String inputs, String outputs, String costMdls) {
-        SlotConfig.SlotConfigByValue slotConfig = getSlotConfig();
+        SlotConfig.SlotConfigByValue slotConfig = getDefaultSlotConfig();
         String response = CardanoJNAUtil.eval_phase_two_raw(txnHex, inputs, outputs, costMdls, slotConfig);
 
         return response;

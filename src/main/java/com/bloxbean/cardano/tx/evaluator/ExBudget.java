@@ -8,7 +8,6 @@ import java.io.IOException;
 @Structure.FieldOrder({"mem", "cpu"})
 public class ExBudget extends Structure implements Closeable {
     public static class ExBudgetByValue extends ExBudget implements Structure.ByValue { }
-//    public static class ByReference extends ExBudget implements Structure.ByReference { }
 
     public long mem;
     public long cpu;
