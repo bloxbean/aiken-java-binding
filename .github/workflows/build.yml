@@ -27,10 +27,6 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-      - name: Grant execute permission for download_libs.sh
-        run: chmod +x download_libs.sh
-      - name: Download libs
-        run: sh download_libs.sh
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build with Gradle
