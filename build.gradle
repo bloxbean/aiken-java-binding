@@ -119,9 +119,9 @@ publishing {
                 classifier = 'javadoc'
             }
             pom {
-                name = 'Cardano Client Transaction Evaluator'
-                description = 'Cardano Client Transaction Evaluator'
-                url = 'https://github.com/bloxbean/cardano-client-tx-evaluator'
+                name = 'Aiken Java Binding'
+                description = 'A Java binding for Aiken Smart Contract Language Library'
+                url = 'https://github.com/bloxbean/aiken-java-binding'
                 licenses {
                     license {
                         name = 'The MIT License'
@@ -132,13 +132,12 @@ publishing {
                     developer {
                         id = 'satran004'
                         name = 'Satya'
-                        email = 'satran004@gmail.com'
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/bloxbean/cardano-client-tx-evaluator'
-                    developerConnection = 'scm:git:ssh://git@github.com/bloxbean/cardano-client-tx-evaluator'
-                    url = 'https://github.com/bloxbean/cardano-client-tx-evaluator'
+                    connection = 'scm:git:git://github.com/bloxbean/aiken-java-binding'
+                    developerConnection = 'scm:git:ssh://git@github.com/bloxbean/aiken-java-binding'
+                    url = 'https://github.com/bloxbean/aiken-java-binding'
                 }
             }
         }
