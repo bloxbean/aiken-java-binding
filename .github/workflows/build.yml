@@ -15,12 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # a list of all the targets
-        include:
-          - OS: ubuntu-20.04
-          - OS: macos-latest
-          - OS: windows-latest
-    runs-on: ${{ matrix.OS }}
+        os: [ubuntu-20.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
