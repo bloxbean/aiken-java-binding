@@ -1,4 +1,4 @@
-package com.bloxbean.cardano.tx.evaluator.jna;
+package com.bloxbean.cardano.aiken.jna;
 
 import java.io.*;
 import java.nio.file.FileSystemNotFoundException;

@@ -1,10 +1,9 @@
-package com.bloxbean.cardano.tx.evaluator.jna;
+package com.bloxbean.cardano.aiken.jna;
 
-import com.bloxbean.cardano.tx.evaluator.SlotConfig;
+import com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.StringArray;
 
 interface CardanoJNA extends Library {
     CardanoJNA INSTANCE = Native.load(LibraryUtil.getAikenWrapperLib(),

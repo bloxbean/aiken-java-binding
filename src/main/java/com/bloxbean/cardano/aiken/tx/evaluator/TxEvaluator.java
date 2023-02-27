@@ -1,9 +1,10 @@
-package com.bloxbean.cardano.tx.evaluator;
+package com.bloxbean.cardano.aiken.tx.evaluator;
 
 import co.nstant.in.cbor.CborException;
 import co.nstant.in.cbor.model.Array;
 import co.nstant.in.cbor.model.DataItem;
 import co.nstant.in.cbor.model.SimpleValue;
+import com.bloxbean.cardano.aiken.tx.evaluator.exception.TxEvaluationException;
 import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.exception.AddressExcepion;
 import com.bloxbean.cardano.client.exception.CborDeserializationException;
@@ -12,7 +13,7 @@ import com.bloxbean.cardano.client.exception.CborSerializationException;
 import com.bloxbean.cardano.client.transaction.spec.*;
 import com.bloxbean.cardano.client.transaction.util.CborSerializationUtil;
 import com.bloxbean.cardano.client.util.HexUtil;
-import com.bloxbean.cardano.tx.evaluator.jna.CardanoJNAUtil;
+import com.bloxbean.cardano.aiken.jna.CardanoJNAUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,10 +74,8 @@ public class TxEvaluator {
                     costMdlsHex, slotConfig);
 
             return deserializeRedeemerArray(response);
-        } catch (CborSerializationException e) {
-            throw new RuntimeException(e);
-        } catch (CborException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new TxEvaluationException("TxEvaluation Failed", e);
         }
     }
 
