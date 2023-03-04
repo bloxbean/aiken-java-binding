@@ -1,4 +1,4 @@
-tag=v0.0.8
+tag=v0.0.9
 
 mkdir -p native/linux-x86-64
 mkdir -p native/darwin-aarch64
