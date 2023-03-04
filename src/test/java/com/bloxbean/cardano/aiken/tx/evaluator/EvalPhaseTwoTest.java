@@ -29,8 +29,10 @@ public class EvalPhaseTwoTest {
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
 
-        String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, slotConfig );
-        System.out.println(deserializeRedeemerArray(redeemers));
+        for (int i=0; i<30; i++) { //Looping to check any occasional jvm crash error
+            String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, slotConfig);
+            System.out.println(deserializeRedeemerArray(redeemers));
+        }
 
     }
 
@@ -46,8 +48,10 @@ public class EvalPhaseTwoTest {
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
 
-        String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, slotConfig );
-        assertThat(redeemers).contains("RedeemerError");
+        for (int i=0; i<30; i++) { //Looping to check any occasional jvm crash error
+            String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, slotConfig);
+            assertThat(redeemers).contains("RedeemerError");
+        }
     }
 
     private List<Redeemer> deserializeRedeemerArray(String response) {
