@@ -11,10 +11,10 @@ repositories {
 sourceCompatibility = '11'
 
 dependencies {
-    implementation group: 'net.java.dev.jna', name: 'jna', version: '5.8.0'
-    implementation group: 'net.java.dev.jna', name: 'jna-platform', version: '5.8.0'
+    implementation group: 'net.java.dev.jna', name: 'jna', version: '5.13.0'
+    implementation group: 'net.java.dev.jna', name: 'jna-platform', version: '5.13.0'
 
-    implementation group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.4.3'
+    compileOnly group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.4.3'
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
@@ -27,6 +27,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:4.6.1'
     testImplementation('org.assertj:assertj-core:3.23.1')
     testRuntimeOnly 'org.slf4j:slf4j-log4j12:1.7.36'
+    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.4.3'
     testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-blockfrost', version: '0.4.3'
 
     testCompileOnly 'org.projectlombok:lombok:1.18.24'

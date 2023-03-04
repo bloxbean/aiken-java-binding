@@ -41,18 +41,18 @@ public class TxEvaluator {
     /**
      * Evaluate script costs for a transaction
      * @param transaction Transaction
-     * @param utxos List utxos used in transaction inputs
+     * @param inputUtxos List utxos used in transaction inputs
      * @param costMdls Cost models
      * @return List of {@link Redeemer} with estimated script costs as {@link ExUnits}
      * @throws TxEvaluationException if script evaluation fails
      */
-    public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> utxos, CostMdls costMdls) {
+    public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> inputUtxos, CostMdls costMdls) {
         List<PlutusScript> scripts = new ArrayList<>();
         scripts.addAll(transaction.getWitnessSet().getPlutusV1Scripts());
         scripts.addAll(transaction.getWitnessSet().getPlutusV2Scripts());
 
         List<TransactionInput> txInputs = transaction.getBody().getInputs();
-        List<TransactionOutput> txOutputs = resolveTxInputs(txInputs, utxos, scripts);
+        List<TransactionOutput> txOutputs = resolveTxInputs(txInputs, inputUtxos, scripts);
 
         //Serialize Inputs
         Array inputArray = new Array();
