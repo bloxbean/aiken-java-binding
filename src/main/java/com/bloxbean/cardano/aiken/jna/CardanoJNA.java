@@ -10,7 +10,7 @@ interface CardanoJNA extends Library {
             CardanoJNA.class);
 
     Pointer eval_phase_two(String txBytes, String inputs, String outputs, String costMdlsBytes,
-                           SlotConfig.SlotConfigByValue slotConfig);
+                           SlotConfig.SlotConfigByReference slotConfig);
 
     void dropCharPointer(Pointer pointer);
 }

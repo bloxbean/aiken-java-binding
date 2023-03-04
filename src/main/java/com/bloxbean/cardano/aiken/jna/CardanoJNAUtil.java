@@ -5,7 +5,7 @@ import com.sun.jna.Pointer;
 
 public class CardanoJNAUtil {
 
-    public static String eval_phase_two_raw(String tx, String inputs, String outputs, String costMdls, SlotConfig.SlotConfigByValue slotConfig) {
+    public static String eval_phase_two_raw(String tx, String inputs, String outputs, String costMdls, SlotConfig.SlotConfigByReference slotConfig) {
         Pointer pointer = CardanoJNA.INSTANCE.eval_phase_two(tx, inputs, outputs, costMdls, slotConfig);
         String result = pointer.getString(0);
 

@@ -32,7 +32,7 @@ public class TxEvaluator {
     }
 
     public TxEvaluator(SlotConfig slotConfig) {
-        this.slotConfig = new SlotConfig.SlotConfigByValue();
+        this.slotConfig = new SlotConfig.SlotConfigByReference();
         this.slotConfig.zero_slot = slotConfig.zero_slot;
         this.slotConfig.zero_time = slotConfig.zero_time;
         this.slotConfig.slot_length = slotConfig.slot_length;
@@ -74,7 +74,7 @@ public class TxEvaluator {
             }
         });
 
-        SlotConfig.SlotConfigByValue slotConfig = getDefaultSlotConfig();
+        SlotConfig.SlotConfigByReference slotConfig = getDefaultSlotConfig();
         try {
             String costMdlsHex = HexUtil.encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
             String response = CardanoJNAUtil.eval_phase_two_raw(transaction.serializeToHex(),
@@ -118,8 +118,8 @@ public class TxEvaluator {
         }
     }
 
-    private SlotConfig.SlotConfigByValue getDefaultSlotConfig() {
-        SlotConfig.SlotConfigByValue slotConfig = new SlotConfig.SlotConfigByValue();
+    private SlotConfig.SlotConfigByReference getDefaultSlotConfig() {
+        SlotConfig.SlotConfigByReference slotConfig = new SlotConfig.SlotConfigByReference();
         slotConfig.zero_time = 1660003200000L;
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
