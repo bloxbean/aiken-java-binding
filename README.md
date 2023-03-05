@@ -12,6 +12,13 @@ It uses [aiken-jna-wrapper](https://github.com/bloxbean/aiken-jna-wrapper) to ac
 
 **Workaround :** During the transaction cost evaluation, remove the reference inputs from the transaction and add the plutus script to the witness set. After calculating the script cost, you can add back the reference input again.
 
+## Supported Operating Systems / Archs
+- Apple MacOS (Intel and Apple Silicon)
+- Linux (x86_64) (Ubuntu 20.04 or compatible ...)
+- Windows 64bits (x86_64)
+
+For another platform, please create a PR / request [here](https://github.com/bloxbean/aiken-jna-wrapper/issues)
+
 ## Dependencies
 
 **Maven (pom.xml)**
@@ -43,7 +50,7 @@ of redeemers with updated execution units. You can set these execution units in 
  costMdls.add(CostModelUtil.getCostModelFromProtocolParams(protocolParamsSupplier.getProtocolParams(), Language.PLUTUS_V2).orElseThrow());
 
  //Evaluate
- List<Redeemer> evalReedemers = txEvaluator.evaluateTx(txn, utxos, costMdls);
+ List<Redeemer> evalReedemers = txEvaluator.evaluateTx(txn, inputUtxos, costMdls);
 
 ```
 
