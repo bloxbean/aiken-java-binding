@@ -7,6 +7,11 @@ It uses [aiken-jna-wrapper](https://github.com/bloxbean/aiken-jna-wrapper) to ac
 
 **Current Version:** 0.0.2
 
+### Current Limitations
+- The current version doesn't work for a transaction with reference inputs. [Issue](https://github.com/bloxbean/aiken-java-binding/issues/1)
+
+**Workaround :** During the transaction cost evaluation, remove the reference inputs from the transaction and add the plutus script to the witness set. After calculating the script cost, you can add back the reference input again.
+
 ## Dependencies
 
 **Maven (pom.xml)**
