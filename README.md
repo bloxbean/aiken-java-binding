@@ -37,6 +37,28 @@ For another platform, please create a PR / request [here](https://github.com/blo
 implementation 'com.bloxbean.cardano:aiken-java-binding:${version}'
 ```
 
+### Other dependencies
+You also need to provide ``cardano-client-lib`` and ``jna`` dependencies if not already there.
+
+```
+<dependency>
+   <groupId>com.bloxbean.cardano</groupId>
+   <artifactId>cardano-client-lib</artifactId>
+   <version>0.4.3</version>
+</dependency>
+<dependency>
+   <groupId>net.java.dev.jna</groupId>
+   <artifactId>jna</artifactId>
+   <version>5.13.0</version>
+</dependency>
+<dependency>
+   <groupId>net.java.dev.jna</groupId>
+   <artifactId>jna-platform</artifactId>
+   <version>5.13.0</version>
+</dependency>
+```
+
+
 ### How to use ?
 
 You can use the ``TxEvaluator`` class to evaluate script execution costs for a transaction. The ``evaluateTx`` method returns a list 
