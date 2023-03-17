@@ -29,11 +29,14 @@ public class EvalPhaseTwoTest {
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
 
+        InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        initialBudgetConfig.mem = 16000000L;
+        initialBudgetConfig.cpu = 10000000000L;
+
         for (int i=0; i<30; i++) { //Looping to check any occasional jvm crash error
-            String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, slotConfig);
+            String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, initialBudgetConfig, slotConfig);
             System.out.println(deserializeRedeemerArray(redeemers));
         }
-
     }
 
     @Test
@@ -48,8 +51,12 @@ public class EvalPhaseTwoTest {
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
 
+        InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        initialBudgetConfig.mem = 16000000L;
+        initialBudgetConfig.cpu = 10000000000L;
+
         for (int i=0; i<30; i++) { //Looping to check any occasional jvm crash error
-            String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, slotConfig);
+            String redeemers = CardanoJNAUtil.eval_phase_two_raw(tx_hex, inputs, outputs, cost_mdls, initialBudgetConfig, slotConfig);
             assertThat(redeemers).contains("RedeemerError");
         }
     }

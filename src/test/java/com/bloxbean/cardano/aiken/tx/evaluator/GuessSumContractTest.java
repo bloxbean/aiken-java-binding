@@ -116,7 +116,9 @@ public class GuessSumContractTest  {
                     costMdls.add(CostModelUtil.PlutusV2CostModel);
 
                     //Evaluate ExUnits
-                    TxEvaluator txEvaluator = new TxEvaluator(new SlotConfig(1000, 0, 100));
+                    SlotConfig slotConfig = new SlotConfig(1000, 0, 100);
+                    InitialBudgetConfig initialBudgetConfig = new InitialBudgetConfig(16000000L, 10000000000L);
+                    TxEvaluator txEvaluator = new TxEvaluator(slotConfig, initialBudgetConfig);
                     List<Redeemer> redeemerList = txEvaluator.evaluateTx(txn, context.getUtxos(), costMdls);
                     txn.getWitnessSet().getRedeemers().get(0).setExUnits(redeemerList.get(0).getExUnits());
 
