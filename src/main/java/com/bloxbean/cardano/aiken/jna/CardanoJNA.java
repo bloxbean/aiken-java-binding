@@ -14,7 +14,7 @@ interface CardanoJNA extends Library {
                            String inputs,
                            String outputs,
                            String costMdlsBytes,
-                           InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig,
+                           InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig,
                            SlotConfig.SlotConfigByReference slotConfig);
 
     void dropCharPointer(Pointer pointer);

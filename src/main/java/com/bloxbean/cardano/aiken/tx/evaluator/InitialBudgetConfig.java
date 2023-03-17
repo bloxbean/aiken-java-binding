@@ -12,7 +12,7 @@ import java.io.IOException;
 @Structure.FieldOrder({"mem", "cpu"})
 public class InitialBudgetConfig extends Structure implements Closeable {
 
-    public static class InitialBudgetByReference extends InitialBudgetConfig implements ByReference { }
+    public static class InitialBudgetByValue extends InitialBudgetConfig implements ByValue { }
 
     public long mem;
     public long cpu;

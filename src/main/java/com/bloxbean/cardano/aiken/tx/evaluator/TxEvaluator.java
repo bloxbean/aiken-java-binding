@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class TxEvaluator {
 
     private final SlotConfig.SlotConfigByReference slotConfig;
-    private final InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig;
+    private final InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig;
 
     public TxEvaluator() {
         this.slotConfig = getDefaultSlotConfig();
@@ -40,7 +40,7 @@ public class TxEvaluator {
         this.slotConfig.zero_time = slotConfig.zero_time;
         this.slotConfig.slot_length = slotConfig.slot_length;
 
-        this.initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        this.initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
         this.initialBudgetConfig.mem = initialBudgetConfig.mem;
         this.initialBudgetConfig.cpu = initialBudgetConfig.cpu;
     }
@@ -141,10 +141,10 @@ public class TxEvaluator {
         return slotConfig;
     }
 
-    private static InitialBudgetConfig.InitialBudgetByReference getDefaultInitialBudgetConfig() {
-        InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
-        initialBudgetConfig.mem = 1660003200000L;
-        initialBudgetConfig.cpu = 0;
+    private static InitialBudgetConfig.InitialBudgetByValue getDefaultInitialBudgetConfig() {
+        InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
+        initialBudgetConfig.mem = 10000000;
+        initialBudgetConfig.cpu = 10000000000L;
 
         return initialBudgetConfig;
     }

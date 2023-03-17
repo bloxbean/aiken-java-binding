@@ -29,7 +29,7 @@ public class EvalPhaseTwoTest {
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
 
-        InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
         initialBudgetConfig.mem = 16000000L;
         initialBudgetConfig.cpu = 10000000000L;
 
@@ -51,7 +51,7 @@ public class EvalPhaseTwoTest {
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
 
-        InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
         initialBudgetConfig.mem = 16000000L;
         initialBudgetConfig.cpu = 10000000000L;
 

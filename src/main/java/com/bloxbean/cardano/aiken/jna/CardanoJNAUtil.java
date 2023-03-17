@@ -10,7 +10,7 @@ public class CardanoJNAUtil {
                                             String inputs,
                                             String outputs,
                                             String costMdls,
-                                            InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig,
+                                            InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig,
                                             SlotConfig.SlotConfigByReference slotConfig) {
         Pointer pointer = CardanoJNA.INSTANCE.eval_phase_two(tx, inputs, outputs, costMdls, initialBudgetConfig, slotConfig);
         String result = pointer.getString(0);
