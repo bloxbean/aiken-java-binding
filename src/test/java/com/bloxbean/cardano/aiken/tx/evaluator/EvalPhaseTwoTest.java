@@ -30,7 +30,7 @@ public class EvalPhaseTwoTest {
         slotConfig.slot_length = 1000;
 
         InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
-        initialBudgetConfig.mem = 16000000L;
+        initialBudgetConfig.mem = 14000000L;
         initialBudgetConfig.cpu = 10000000000L;
 
         for (int i=0; i<30; i++) { //Looping to check any occasional jvm crash error
@@ -52,7 +52,7 @@ public class EvalPhaseTwoTest {
         slotConfig.slot_length = 1000;
 
         InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
-        initialBudgetConfig.mem = 16000000L;
+        initialBudgetConfig.mem = 14000000L;
         initialBudgetConfig.cpu = 10000000000L;
 
         for (int i=0; i<30; i++) { //Looping to check any occasional jvm crash error

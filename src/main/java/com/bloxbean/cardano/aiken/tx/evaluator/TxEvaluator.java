@@ -143,7 +143,7 @@ public class TxEvaluator {
 
     private static InitialBudgetConfig.InitialBudgetByValue getDefaultInitialBudgetConfig() {
         InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
-        initialBudgetConfig.mem = 10000000;
+        initialBudgetConfig.mem = 14000000L;
         initialBudgetConfig.cpu = 10000000000L;
 
         return initialBudgetConfig;
