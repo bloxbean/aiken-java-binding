@@ -25,17 +25,24 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class TxEvaluator {
-    private final SlotConfig slotConfig;
+
+    private final SlotConfig.SlotConfigByReference slotConfig;
+    private final InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig;
 
     public TxEvaluator() {
         this.slotConfig = getDefaultSlotConfig();
+        this.initialBudgetConfig = getDefaultInitialBudgetConfig();
     }
 
-    public TxEvaluator(SlotConfig slotConfig) {
+    public TxEvaluator(SlotConfig slotConfig, InitialBudgetConfig initialBudgetConfig) {
         this.slotConfig = new SlotConfig.SlotConfigByReference();
         this.slotConfig.zero_slot = slotConfig.zero_slot;
         this.slotConfig.zero_time = slotConfig.zero_time;
         this.slotConfig.slot_length = slotConfig.slot_length;
+
+        this.initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        this.initialBudgetConfig.mem = initialBudgetConfig.mem;
+        this.initialBudgetConfig.cpu = initialBudgetConfig.cpu;
     }
 
     /**
@@ -74,18 +81,25 @@ public class TxEvaluator {
             }
         });
 
-        SlotConfig.SlotConfigByReference slotConfig = getDefaultSlotConfig();
         try {
             String costMdlsHex = HexUtil.encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
-            String response = CardanoJNAUtil.eval_phase_two_raw(transaction.serializeToHex(),
-                    HexUtil.encodeHexString(CborSerializationUtil.serialize(inputArray)),
-                    HexUtil.encodeHexString(CborSerializationUtil.serialize(outputArray)),
-                    costMdlsHex, slotConfig);
+            String trxCbor = transaction.serializeToHex();
+            String inputsCbor = HexUtil.encodeHexString(CborSerializationUtil.serialize(inputArray));
+            String outputsCbor = HexUtil.encodeHexString(CborSerializationUtil.serialize(outputArray));
+
+            String response = CardanoJNAUtil.eval_phase_two_raw(
+                    trxCbor,
+                    inputsCbor,
+                    outputsCbor,
+                    costMdlsHex,
+                    initialBudgetConfig,
+                    slotConfig
+            );
 
             if (log.isTraceEnabled()) {
-                log.trace("Transaction: " + transaction.serializeToHex());
-                log.trace("Inputs : " + HexUtil.encodeHexString(CborSerializationUtil.serialize(inputArray)));
-                log.trace("Outputs : " + HexUtil.encodeHexString(CborSerializationUtil.serialize(outputArray)));
+                log.trace("Transaction: " + trxCbor);
+                log.trace("Inputs : " + inputsCbor);
+                log.trace("Outputs : " + outputsCbor);
                 log.trace("CostMdlsHex : " + costMdlsHex);
             }
 
@@ -118,25 +132,35 @@ public class TxEvaluator {
         }
     }
 
-    private SlotConfig.SlotConfigByReference getDefaultSlotConfig() {
+    private static SlotConfig.SlotConfigByReference getDefaultSlotConfig() {
         SlotConfig.SlotConfigByReference slotConfig = new SlotConfig.SlotConfigByReference();
         slotConfig.zero_time = 1660003200000L;
         slotConfig.zero_slot = 0;
         slotConfig.slot_length = 1000;
+
         return slotConfig;
+    }
+
+    private static InitialBudgetConfig.InitialBudgetByReference getDefaultInitialBudgetConfig() {
+        InitialBudgetConfig.InitialBudgetByReference initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByReference();
+        initialBudgetConfig.mem = 1660003200000L;
+        initialBudgetConfig.cpu = 0;
+
+        return initialBudgetConfig;
     }
 
     private List<TransactionOutput> resolveTxInputs(List<TransactionInput> transactionInputs, Set<Utxo> utxos, List<PlutusScript> plutusScripts) {
         return transactionInputs.stream().map(input -> {
             try {
-
-                Utxo utxo = utxos.stream().filter(_utxo -> input.getTransactionId().equals(_utxo.getTxHash()) && input.getIndex() == _utxo.getOutputIndex())
+                Utxo utxo = utxos.stream()
+                        .filter(_utxo -> input.getTransactionId().equals(_utxo.getTxHash()))
+                        .filter(_utxo -> input.getIndex() == _utxo.getOutputIndex())
                         .findFirst()
                         .orElseThrow();
 
                 String address = utxo.getAddress();
 
-                //Calculate script ref
+                // Calculate script ref
                 PlutusScript plutusScript = plutusScripts.stream().filter(script -> {
                     try {
                         return HexUtil.encodeHexString(script.getScriptHash()).equals(utxo.getReferenceScriptHash());
@@ -147,7 +171,6 @@ public class TxEvaluator {
 
                 PlutusData inlineDatum = utxo.getInlineDatum() != null ? PlutusData.deserialize(HexUtil.decodeHexString(utxo.getInlineDatum())) : null;
                 byte[] datumHash = utxo.getDataHash() != null ? HexUtil.decodeHexString(utxo.getDataHash()) : null;
-
 
                 return TransactionOutput.builder()
                         .address(address)
