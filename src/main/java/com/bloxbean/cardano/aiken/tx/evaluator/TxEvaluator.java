@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -61,25 +62,8 @@ public class TxEvaluator {
         List<TransactionInput> txInputs = transaction.getBody().getInputs();
         List<TransactionOutput> txOutputs = resolveTxInputs(txInputs, inputUtxos, scripts);
 
-        //Serialize Inputs
-        Array inputArray = new Array();
-        txInputs.forEach(txInput -> {
-            try {
-                inputArray.add(txInput.serialize());
-            } catch (CborSerializationException e) {
-                throw new CborRuntimeException(e);
-            }
-        });
-
-        //Serialize Outputs
-        Array outputArray = new Array();
-        txOutputs.forEach(txOutput -> {
-            try {
-                outputArray.add(txOutput.serialize());
-            } catch (CborSerializationException | AddressExcepion e) {
-                throw new CborRuntimeException(e);
-            }
-        });
+        Array inputArray = serialiseInputs(txInputs);
+        Array outputArray = serialiseOutputs(txOutputs);
 
         try {
             String costMdlsHex = HexUtil.encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
@@ -103,15 +87,47 @@ public class TxEvaluator {
                 log.trace("CostMdlsHex : " + costMdlsHex);
             }
 
-            if (response != null && response.contains("RedeemerError"))
-                throw new TxEvaluationException(response);
-            else
-                return deserializeRedeemerArray(response);
+            return Optional.ofNullable(response).map(r -> {
+                if (r.isEmpty()) {
+                    throw new TxEvaluationException("Fatal error while evaluating transaction, empty response.");
+                }
+
+                if (r.contains("RedeemerError")) {
+                    throw new TxEvaluationException(r);
+                }
+
+                return deserializeRedeemerArray(r);
+            })
+            .orElseThrow(() -> new TxEvaluationException("Fatal error while evaluating transaction, null response."));
         } catch (TxEvaluationException e) {
             throw e;
         } catch (Exception e) {
-            throw new TxEvaluationException("TxEvaluation Failed", e);
+            throw new TxEvaluationException("TxEvaluation failed", e);
         }
+    }
+
+    private static Array serialiseOutputs(List<TransactionOutput> txOutputs) {
+        Array outputArray = new Array();
+        txOutputs.forEach(txOutput -> {
+            try {
+                outputArray.add(txOutput.serialize());
+            } catch (CborSerializationException | AddressExcepion e) {
+                throw new CborRuntimeException(e);
+            }
+        });
+        return outputArray;
+    }
+
+    private static Array serialiseInputs(List<TransactionInput> txInputs) {
+        Array inputArray = new Array();
+        txInputs.forEach(txInput -> {
+            try {
+                inputArray.add(txInput.serialize());
+            } catch (CborSerializationException e) {
+                throw new CborRuntimeException(e);
+            }
+        });
+        return inputArray;
     }
 
     private List<Redeemer> deserializeRedeemerArray(String response) {
