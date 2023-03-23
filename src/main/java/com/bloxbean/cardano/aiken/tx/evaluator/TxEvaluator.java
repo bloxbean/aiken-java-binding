@@ -29,11 +29,57 @@ public class TxEvaluator {
     private final SlotConfig.SlotConfigByReference slotConfig;
     private final InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig;
 
+    /**
+     * Construct instance of TxEvaluator, this is a typical work flow, values from here represent defaults
+     * On Cardano's mainnet
+     */
     public TxEvaluator() {
         this.slotConfig = getDefaultSlotConfig();
         this.initialBudgetConfig = getDefaultInitialBudgetConfig();
     }
 
+    /**
+     * Construct instance of TxEvaluator with an initial transaction budget config.
+     * Those values are typically present on protocol-parameters.json.
+     *
+     * "maxTxExecutionUnits": {
+     *   "memory": 14000000,
+     *   "steps": 10000000000
+     *  }
+     *
+     *  Typical scenario to override those values is where one uses L2 solution, e.g. Hydra
+     *  with custom config or custom dev network (e.g. using yaci-devkit).
+     *
+     * @param initialBudgetConfig max transaction execution units
+     */
+    public TxEvaluator(InitialBudgetConfig initialBudgetConfig) {
+        this.slotConfig = getDefaultSlotConfig();
+
+        this.initialBudgetConfig = new InitialBudgetConfig.InitialBudgetByValue();
+        this.initialBudgetConfig.mem = initialBudgetConfig.mem;
+        this.initialBudgetConfig.cpu = initialBudgetConfig.cpu;
+    }
+
+    /**
+     * Construct instance of TxEvaluator with an initial transaction budget config.
+     * Those values are typically present on protocol-parameters.json.
+     *
+     * "maxTxExecutionUnits": {
+     *   "memory": 14000000,
+     *   "steps": 10000000000
+     *  }
+     *
+     *  shelley-genesis.json:
+     *  "zero_time": 1660003200000L,
+     *  "zero_slot": 0,
+     *  "slot_length: 1000
+     *
+     *  Typical scenario to override those values is where one uses L2 solution, e.g. Hydra
+     *  with custom config or custom dev network (e.g. using yaci-devkit).
+     *
+     * @param initialBudgetConfig - max transaction execution units
+     * @param slotConfig - slot config values as specified during shelley genesis era
+     */
     public TxEvaluator(SlotConfig slotConfig, InitialBudgetConfig initialBudgetConfig) {
         this.slotConfig = new SlotConfig.SlotConfigByReference();
         this.slotConfig.zero_slot = slotConfig.zero_slot;
