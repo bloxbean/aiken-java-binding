@@ -1,28 +1,27 @@
 package com.bloxbean.cardano.aiken.tx.evaluator;
 
-import co.nstant.in.cbor.model.Array;
-import co.nstant.in.cbor.model.DataItem;
-import co.nstant.in.cbor.model.SimpleValue;
 import com.bloxbean.cardano.aiken.jna.CardanoJNAUtil;
 import com.bloxbean.cardano.aiken.tx.evaluator.exception.TxEvaluationException;
 import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.common.cbor.CborSerializationUtil;
-import com.bloxbean.cardano.client.exception.AddressExcepion;
 import com.bloxbean.cardano.client.exception.CborDeserializationException;
-import com.bloxbean.cardano.client.exception.CborRuntimeException;
 import com.bloxbean.cardano.client.exception.CborSerializationException;
 import com.bloxbean.cardano.client.transaction.spec.*;
 import com.bloxbean.cardano.client.util.HexUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.bloxbean.cardano.aiken.tx.evaluator.AikenCbors.*;
+import static com.bloxbean.cardano.client.util.HexUtil.encodeHexString;
+import static com.bloxbean.cardano.client.util.JsonUtil.parseJson;
+
 /**
- * Evaluate script costs for a transaction.
+ * Evaluate script costs for a transaction using two phase eval from Aiken.
  */
 @Slf4j
 public class TxEvaluator {
@@ -32,7 +31,7 @@ public class TxEvaluator {
 
     /**
      * Construct instance of TxEvaluator, this is a typical work flow, values from here represent defaults
-     * On Cardano's mainnet
+     * On Cardano's main-net
      */
     public TxEvaluator() {
         this.slotConfig = getDefaultSlotConfig();
@@ -63,9 +62,10 @@ public class TxEvaluator {
 
     /**
      * Construct instance of TxEvaluator with an initial transaction budget config.
-     * Those values are typically present on protocol-parameters.json.
+     * Those values are typically present on
      *
-     * "maxTxExecutionUnits": {
+     * protocol-parameters.json:
+     * * "maxTxExecutionUnits": {
      *   "memory": 14000000,
      *   "steps": 10000000000
      *  }
@@ -81,7 +81,8 @@ public class TxEvaluator {
      * @param initialBudgetConfig - max transaction execution units
      * @param slotConfig - slot config values as specified during shelley genesis era
      */
-    public TxEvaluator(SlotConfig slotConfig, InitialBudgetConfig initialBudgetConfig) {
+    public TxEvaluator(SlotConfig slotConfig,
+                       InitialBudgetConfig initialBudgetConfig) {
         this.slotConfig = new SlotConfig.SlotConfigByReference();
         this.slotConfig.zero_slot = slotConfig.zero_slot;
         this.slotConfig.zero_time = slotConfig.zero_time;
@@ -108,16 +109,13 @@ public class TxEvaluator {
         List<TransactionInput> txInputs = transaction.getBody().getInputs();
         List<TransactionOutput> txOutputs = resolveTxInputs(txInputs, inputUtxos, scripts);
 
-        Array inputArray = serialiseInputs(txInputs);
-        Array outputArray = serialiseOutputs(txOutputs);
-
         try {
-            String costMdlsHex = HexUtil.encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
+            String costMdlsHex = encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
             String trxCbor = transaction.serializeToHex();
-            String inputsCbor = HexUtil.encodeHexString(CborSerializationUtil.serialize(inputArray));
-            String outputsCbor = HexUtil.encodeHexString(CborSerializationUtil.serialize(outputArray));
+            String inputsCbor = encodeHexString(CborSerializationUtil.serialize(serialiseInputs(txInputs)));
+            String outputsCbor = encodeHexString(CborSerializationUtil.serialize(serialiseOutputs(txOutputs)));
 
-            String response = CardanoJNAUtil.eval_phase_two_raw(
+            String json = CardanoJNAUtil.eval_phase_two_raw(
                     trxCbor,
                     inputsCbor,
                     outputsCbor,
@@ -133,64 +131,19 @@ public class TxEvaluator {
                 log.trace("CostMdlsHex : " + costMdlsHex);
             }
 
-            return Optional.ofNullable(response).map(r -> {
-                if (r.isEmpty()) {
-                    throw new TxEvaluationException("Fatal error while evaluating transaction, empty response.");
-                }
+            JsonNode node = parseJson(json);
+            String status = node.get("status").asText();
 
-                if (r.contains("RedeemerError")) {
-                    throw new TxEvaluationException(r);
-                }
+            if (status.equalsIgnoreCase("SUCCESS")) {
+                return deserializeRedeemerArray(node.get("redeemer_cbor").asText());
+            }
 
-                return deserializeRedeemerArray(r);
-            })
-            .orElseThrow(() -> new TxEvaluationException("Fatal error while evaluating transaction, null response."));
+            throw new TxEvaluationException(node.get("error").asText());
         } catch (TxEvaluationException e) {
             throw e;
+        // catch all
         } catch (Exception e) {
             throw new TxEvaluationException("TxEvaluation failed", e);
-        }
-    }
-
-    private static Array serialiseOutputs(List<TransactionOutput> txOutputs) {
-        Array outputArray = new Array();
-        txOutputs.forEach(txOutput -> {
-            try {
-                outputArray.add(txOutput.serialize());
-            } catch (CborSerializationException | AddressExcepion e) {
-                throw new CborRuntimeException(e);
-            }
-        });
-        return outputArray;
-    }
-
-    private static Array serialiseInputs(List<TransactionInput> txInputs) {
-        Array inputArray = new Array();
-        txInputs.forEach(txInput -> {
-            try {
-                inputArray.add(txInput.serialize());
-            } catch (CborSerializationException e) {
-                throw new CborRuntimeException(e);
-            }
-        });
-        return inputArray;
-    }
-
-    private List<Redeemer> deserializeRedeemerArray(String response) {
-        try {
-            byte[] redemeersBytes = HexUtil.decodeHexString(response);
-            Array redeemerArray = (Array) CborSerializationUtil.deserialize(redemeersBytes);
-            List<Redeemer> redeemerList = new ArrayList<>();
-            for (DataItem redeemerDI : redeemerArray.getDataItems()) {
-                if (redeemerDI == SimpleValue.BREAK)
-                    continue;
-                Redeemer redeemer = Redeemer.deserialize((Array) redeemerDI);
-                redeemerList.add(redeemer);
-            }
-
-            return redeemerList;
-        } catch (Exception e) {
-            throw new CborRuntimeException("Unable to parse evaluation result : " + response, e);
         }
     }
 
@@ -225,7 +178,7 @@ public class TxEvaluator {
                 // Calculate script ref
                 PlutusScript plutusScript = plutusScripts.stream().filter(script -> {
                     try {
-                        return HexUtil.encodeHexString(script.getScriptHash()).equals(utxo.getReferenceScriptHash());
+                        return encodeHexString(script.getScriptHash()).equals(utxo.getReferenceScriptHash());
                     } catch (CborSerializationException e) {
                         throw new IllegalStateException(e);
                     }
