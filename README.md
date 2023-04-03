@@ -1,3 +1,5 @@
+[![Clean, Build](https://github.com/bloxbean/aiken-java-binding/actions/workflows/build.yml/badge.svg)](https://github.com/bloxbean/aiken-java-binding/actions/workflows/build.yml)
+[![IntegrationTest](https://github.com/bloxbean/aiken-java-binding/actions/workflows/intergration-test.yml/badge.svg)](https://github.com/bloxbean/aiken-java-binding/actions/workflows/intergration-test.yml)
 # Aiken Java Binding
 
 Java binding for [Aiken](https://aiken-lang.org/), a modern smart contract platform for Cardano Blockchain.
