@@ -15,7 +15,7 @@ import com.bloxbean.cardano.client.util.HexUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class AikenCbors {
+final class AikenCbors {
 
     public static List<Redeemer> deserializeRedeemerArray(String response) {
         try {
