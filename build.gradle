@@ -113,6 +113,10 @@ publishing {
                         id = 'satran004'
                         name = 'Satya'
                     }
+                    developer {
+                        id = 'matiwinnetou'
+                        name = 'Mateusz Czeladka'
+                    }
                 }
                 scm {
                     connection = 'scm:git:git://github.com/bloxbean/aiken-java-binding'
