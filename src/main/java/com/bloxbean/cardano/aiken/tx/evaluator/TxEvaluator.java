@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.bloxbean.cardano.aiken.tx.evaluator.AikenCbors.*;
 import static com.bloxbean.cardano.client.util.HexUtil.encodeHexString;
@@ -96,7 +97,7 @@ public class TxEvaluator {
     /**
      * Evaluate script costs for a transaction
      * @param transaction Transaction
-     * @param inputUtxos List utxos used in transaction inputs
+     * @param inputUtxos List of utxos used in transaction inputs
      * @param costMdls Cost models
      * @return List of {@link Redeemer} with estimated script costs as {@link ExUnits}
      * @throws TxEvaluationException if script evaluation fails
@@ -106,13 +107,28 @@ public class TxEvaluator {
         scripts.addAll(transaction.getWitnessSet().getPlutusV1Scripts());
         scripts.addAll(transaction.getWitnessSet().getPlutusV2Scripts());
 
+        return evaluateTx(transaction, inputUtxos, scripts, costMdls);
+    }
+
+    /**
+     * Evaluate script costs for a transaction
+     * @param transaction Transaction
+     * @param inputUtxos List utxos used in transaction inputs
+     * @param scripts Plutus Scripts in transaction
+     * @param costMdls Cost models
+     * @return List of {@link Redeemer} with estimated script costs as {@link ExUnits}
+     * @throws TxEvaluationException if script evaluation fails
+     */
+    public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> inputUtxos, List<PlutusScript> scripts, CostMdls costMdls) {
         List<TransactionInput> txInputs = transaction.getBody().getInputs();
-        List<TransactionOutput> txOutputs = resolveTxInputs(txInputs, inputUtxos, scripts);
+        List<TransactionInput> refTxInputs = transaction.getBody().getReferenceInputs();
+        List<TransactionInput> allInputs = Stream.concat(txInputs.stream(),refTxInputs.stream()).collect(Collectors.toList());
+        List<TransactionOutput> txOutputs = resolveTxInputs(allInputs, inputUtxos, scripts);
 
         try {
             String costMdlsHex = encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
             String trxCbor = transaction.serializeToHex();
-            String inputsCbor = encodeHexString(CborSerializationUtil.serialize(serialiseInputs(txInputs)));
+            String inputsCbor = encodeHexString(CborSerializationUtil.serialize(serialiseInputs(allInputs)));
             String outputsCbor = encodeHexString(CborSerializationUtil.serialize(serialiseOutputs(txOutputs)));
 
             String json = CardanoJNAUtil.eval_phase_two_raw(
