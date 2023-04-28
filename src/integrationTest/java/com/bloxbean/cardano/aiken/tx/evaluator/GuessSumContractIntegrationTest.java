@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -101,22 +102,40 @@ public class GuessSumContractIntegrationTest {
         Set<Utxo> collateralUtxos =
                 utxoSelectionStrategy.select(senderAddress, new Amount(CardanoConstants.LOVELACE, adaToLovelace(5)), Collections.emptySet());
 
+        //Get reference input
+        TransactionInput refInput = new TransactionInput("5a47b9a4276362000566ac5e58c18f315440a78a8cb0a8d1fe066e0012bcfbab", 0);
+        //Hardcoding referenceInputUtxo for now. This will be removed after https://github.com/bloxbean/cardano-client-lib/pull/241
+        Utxo referenceInputUtxo = Utxo.builder()
+                .address("addr_test1wzcppsyg36f65jydjsd6fqu3xm7whxu6nmp3pftn9xfgd4ckah4da")
+                .txHash(refInput.getTransactionId())
+                .outputIndex(refInput.getIndex())
+                .amount(List.of(new Amount(CardanoConstants.LOVELACE, adaToLovelace(9.34408))))
+                .referenceScriptHash("b010c0888e93aa488d941ba4839136fceb9b9a9ec310a573299286d7")
+                .build();
+
         TxBuilder contractTxBuilder = output.outputBuilder()
                 .buildInputs(InputBuilders.createFromUtxos(List.of(scriptUtxo)))
+                .andThen(InputBuilders.referenceInputsFrom(List.of(refInput)))
                 .andThen(CollateralBuilders.collateralOutputs(senderAddress, Lists.newArrayList(collateralUtxos))) //CIP-40
                 .andThen(ScriptCallContextProviders.createFromScriptCallContext(scriptCallContext))
                 .andThen((context, txn) -> {
                     CostMdls costMdls = new CostMdls();
                     costMdls.add(CostModelUtil.PlutusV2CostModel);
 
+                    //Fix required in cardano-client-lib to also include reference input utxo in the context
+                    Set<Utxo> utxos = new HashSet<>(context.getUtxos());
+                    utxos.add(referenceInputUtxo);
+
                     //Evaluate ExUnits
                     SlotConfig slotConfig = new SlotConfig(1000, 0, 100);
                     InitialBudgetConfig initialBudgetConfig = new InitialBudgetConfig(14000000L, 10000000000L);
                     TxEvaluator txEvaluator = new TxEvaluator(slotConfig, initialBudgetConfig);
-                    List<Redeemer> redeemerList = txEvaluator.evaluateTx(txn, context.getUtxos(), costMdls);
+                    List<Redeemer> redeemerList = txEvaluator.evaluateTx(txn, utxos, costMdls);
                     txn.getWitnessSet().getRedeemers().get(0).setExUnits(redeemerList.get(0).getExUnits());
 
                     System.out.println("ExUnits evaluation From Aiken:" + redeemerList);
+
+                    txn.getWitnessSet().getPlutusV2Scripts().clear();
                 })
                 .andThen(BalanceTxBuilders.balanceTx(senderAddress, 2));
 
