@@ -12,8 +12,8 @@ jobs:
   commit-build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
-    needs: prepare
     strategy:
+      fail-fast: false
       matrix:
         job:
           # os: used for the runner
