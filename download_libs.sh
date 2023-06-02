@@ -1,11 +1,12 @@
 #!/bin/bash
 
-tag=v0.3.0
+tag=v0.4.2
 
 mkdir -p native/linux-x86-64
 mkdir -p native/darwin-aarch64
 mkdir -p native/darwin-x86-64
 mkdir -p native/win32-x86-64
+mkdir -p native/win32-aarch64
 
 echo $tag >> native/version
 
@@ -21,3 +22,5 @@ wget https://github.com/bloxbean/aiken-jna-wrapper/releases/download/$tag/darwin
 echo "Downloading win32-x86-64"
 wget https://github.com/bloxbean/aiken-jna-wrapper/releases/download/$tag/windows-x86-64_aiken_jna_wrapper.dll -O  native/win32-x86-64/aiken_jna_wrapper.dll
 
+echo "Downloading win32-aarch64"
+wget https://github.com/bloxbean/aiken-jna-wrapper/releases/download/$tag/windows-aarch64_aiken_jna_wrapper.dll -O  native/win32-aarch64/aiken_jna_wrapper.dll
