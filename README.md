@@ -7,7 +7,9 @@ Java binding for [Aiken](https://aiken-lang.org/), a modern smart contract platf
 This library enables Java apps to evaluate script costs without relying on external services. 
 It uses [aiken-jna-wrapper](https://github.com/bloxbean/aiken-jna-wrapper) to access Aiken Rust libraries.
 
-**Current Version:** 0.0.3
+**Current Version:** 
+- 0.0.5 (Compatible with [cardano-client-lib](https://github.com/bloxbean/cardano-client-lib) 0.4.3)
+- 0.0.6 (Compatible with [cardano-client-lib](https://github.com/bloxbean/cardano-client-lib) 0.5.x)
 
 ### Current Limitations
 - The current version doesn't work for a transaction with reference inputs. [Issue](https://github.com/bloxbean/aiken-java-binding/issues/1)
