@@ -6,6 +6,10 @@ import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.common.cbor.CborSerializationUtil;
 import com.bloxbean.cardano.client.exception.CborDeserializationException;
 import com.bloxbean.cardano.client.exception.CborSerializationException;
+import com.bloxbean.cardano.client.plutus.spec.CostMdls;
+import com.bloxbean.cardano.client.plutus.spec.PlutusData;
+import com.bloxbean.cardano.client.plutus.spec.PlutusScript;
+import com.bloxbean.cardano.client.plutus.spec.Redeemer;
 import com.bloxbean.cardano.client.transaction.spec.*;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -99,7 +103,7 @@ public class TxEvaluator {
      * @param transaction Transaction
      * @param inputUtxos List of utxos used in transaction inputs
      * @param costMdls Cost models
-     * @return List of {@link Redeemer} with estimated script costs as {@link ExUnits}
+     * @return List of {@link Redeemer} with estimated script costs as {@link com.bloxbean.cardano.client.plutus.spec.ExUnits}
      * @throws TxEvaluationException if script evaluation fails
      */
     public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> inputUtxos, CostMdls costMdls) {
@@ -116,7 +120,7 @@ public class TxEvaluator {
      * @param inputUtxos List utxos used in transaction inputs
      * @param scripts Plutus Scripts in transaction
      * @param costMdls Cost models
-     * @return List of {@link Redeemer} with estimated script costs as {@link ExUnits}
+     * @return List of {@link Redeemer} with estimated script costs as {@link com.bloxbean.cardano.client.plutus.spec.ExUnits}
      * @throws TxEvaluationException if script evaluation fails
      */
     public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> inputUtxos, List<PlutusScript> scripts, CostMdls costMdls) {
