@@ -30,6 +30,7 @@ dependencies {
 
     testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.5.0-alpha.2'
     testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-koios', version: '0.5.0-alpha.2'
+    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-blockfrost', version: '0.5.0-alpha.2'
 
     testCompileOnly 'org.projectlombok:lombok:1.18.26'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.26'
@@ -69,6 +70,11 @@ artifacts {
     archives jar
     archives sourceJar
     archives javadocJar
+}
+
+integrationTest {
+    description = 'Set system properties for integration tests'
+    systemProperty('BF_PROJECT_ID', findProperty("BF_PROJECT_ID"))
 }
 
 //create a single Jar with all dependencies

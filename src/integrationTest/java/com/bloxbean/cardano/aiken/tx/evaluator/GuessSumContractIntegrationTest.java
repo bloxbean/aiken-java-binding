@@ -1,5 +1,6 @@
 package com.bloxbean.cardano.aiken.tx.evaluator;
 
+import com.bloxbean.cardano.aiken.AikenTransactionEvaluator;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.address.AddressProvider;
 import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
@@ -11,34 +12,27 @@ import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.backend.api.BackendService;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
-import com.bloxbean.cardano.client.backend.koios.KoiosBackendService;
-import com.bloxbean.cardano.client.backend.model.TransactionContent;
-import com.bloxbean.cardano.client.coinselection.UtxoSelectionStrategy;
-import com.bloxbean.cardano.client.coinselection.impl.LargestFirstUtxoSelectionStrategy;
+import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
+import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.common.CardanoConstants;
 import com.bloxbean.cardano.client.common.model.Networks;
 import com.bloxbean.cardano.client.exception.CborSerializationException;
-import com.bloxbean.cardano.client.function.Output;
-import com.bloxbean.cardano.client.function.TxBuilder;
-import com.bloxbean.cardano.client.function.TxBuilderContext;
-import com.bloxbean.cardano.client.function.TxSigner;
-import com.bloxbean.cardano.client.function.helper.*;
-import com.bloxbean.cardano.client.function.helper.model.ScriptCallContext;
-import com.bloxbean.cardano.client.plutus.spec.*;
-import com.bloxbean.cardano.client.transaction.spec.*;
-import com.bloxbean.cardano.client.transaction.util.CostModelUtil;
+import com.bloxbean.cardano.client.function.helper.ScriptUtxoFinders;
+import com.bloxbean.cardano.client.function.helper.SignerProviders;
+import com.bloxbean.cardano.client.plutus.spec.BigIntPlutusData;
+import com.bloxbean.cardano.client.plutus.spec.PlutusData;
+import com.bloxbean.cardano.client.plutus.spec.PlutusV2Script;
+import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.ScriptTx;
+import com.bloxbean.cardano.client.quicktx.Tx;
+import com.bloxbean.cardano.client.transaction.spec.TransactionInput;
 import com.bloxbean.cardano.client.util.JsonUtil;
-import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
+import java.util.Optional;
 
 //The caller has to guess the sum of 0..datum_value to claim the locked fund.
 public class GuessSumContractIntegrationTest {
@@ -49,8 +43,8 @@ public class GuessSumContractIntegrationTest {
 
     String senderAddress = sender.baseAddress();
 
-    BackendService backendService = new KoiosBackendService(com.bloxbean.cardano.client.backend.koios.Constants.KOIOS_PREPROD_URL);
-
+//    BackendService backendService = new KoiosBackendService(com.bloxbean.cardano.client.backend.koios.Constants.KOIOS_PREPROD_URL);
+    BackendService backendService = new BFBackendService(Constants.BLOCKFROST_PREPROD_URL, System.getenv("BF_PROJECT_ID"));
     private UtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
 
     private ProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
@@ -71,133 +65,68 @@ public class GuessSumContractIntegrationTest {
         PlutusData datum = BigIntPlutusData.of(8);
 
         lockFundWithInlineDatum(scriptAddress, datum); //CIP-32
+        Thread.sleep(4000); //To avoid retrieving utxo which was just spent
 
         //3. Claim fund by guessing the sum
         //Get script utxo
-
         Utxo scriptUtxo = ScriptUtxoFinders.findFirstByDatumHashUsingDatum(utxoSupplier, scriptAddress, datum).orElseThrow();
         BigInteger claimAmount = scriptUtxo
                 .getAmount().stream().filter(amount -> CardanoConstants.LOVELACE.equals(amount.getUnit()))
                 .findFirst()
                 .orElseThrow().getQuantity();
 
-        Output output = Output.builder()
-                .address(senderAddress)
-                .assetName(CardanoConstants.LOVELACE)
-                .qty(claimAmount)
-                .build();
-
-        ScriptCallContext scriptCallContext = ScriptCallContext
-                .builder()
-                .script(sumScript)
-                .exUnits(ExUnits.builder()  //Exact exUnits will be calculated later
-                        .mem(BigInteger.valueOf(0))
-                        .steps(BigInteger.valueOf(0))
-                        .build())
-                .redeemer(BigIntPlutusData.of(36))
-                .redeemerTag(RedeemerTag.Spend).build();
-
-        // Find collaterals
-        UtxoSelectionStrategy utxoSelectionStrategy = new LargestFirstUtxoSelectionStrategy(utxoSupplier);
-
-        Set<Utxo> collateralUtxos =
-                utxoSelectionStrategy.select(senderAddress, new Amount(CardanoConstants.LOVELACE, adaToLovelace(5)), Collections.emptySet());
-
         //Get reference input
         TransactionInput refInput = new TransactionInput("5a47b9a4276362000566ac5e58c18f315440a78a8cb0a8d1fe066e0012bcfbab", 0);
-        //Hardcoding referenceInputUtxo for now. This will be removed after https://github.com/bloxbean/cardano-client-lib/pull/241
-        Utxo referenceInputUtxo = Utxo.builder()
-                .address("addr_test1wzcppsyg36f65jydjsd6fqu3xm7whxu6nmp3pftn9xfgd4ckah4da")
-                .txHash(refInput.getTransactionId())
-                .outputIndex(refInput.getIndex())
-                .amount(List.of(new Amount(CardanoConstants.LOVELACE, adaToLovelace(9.34408))))
-                .referenceScriptHash("b010c0888e93aa488d941ba4839136fceb9b9a9ec310a573299286d7")
-                .build();
+        ScriptTx tx = new ScriptTx()
+                .payToAddress(senderAddress, Amount.lovelace(claimAmount))
+                .collectFrom(scriptUtxo, BigIntPlutusData.of(36))
+                .readFrom(refInput.getTransactionId(), refInput.getIndex())
+                .attachSpendingValidator(sumScript);
 
-        TxBuilder contractTxBuilder = output.outputBuilder()
-                .buildInputs(InputBuilders.createFromUtxos(List.of(scriptUtxo)))
-                .andThen(InputBuilders.referenceInputsFrom(List.of(refInput)))
-                .andThen(CollateralBuilders.collateralOutputs(senderAddress, Lists.newArrayList(collateralUtxos))) //CIP-40
-                .andThen(ScriptCallContextProviders.createFromScriptCallContext(scriptCallContext))
-                .andThen((context, txn) -> {
-                    CostMdls costMdls = new CostMdls();
-                    costMdls.add(CostModelUtil.PlutusV2CostModel);
-
-                    //Fix required in cardano-client-lib to also include reference input utxo in the context
-                    Set<Utxo> utxos = new HashSet<>(context.getUtxos());
-                    utxos.add(referenceInputUtxo);
-
-                    //Evaluate ExUnits
-                    SlotConfig slotConfig = new SlotConfig(1000, 0, 100);
-                    InitialBudgetConfig initialBudgetConfig = new InitialBudgetConfig(14000000L, 10000000000L);
-                    TxEvaluator txEvaluator = new TxEvaluator(slotConfig, initialBudgetConfig);
-                    List<Redeemer> redeemerList = txEvaluator.evaluateTx(txn, utxos, costMdls);
-                    txn.getWitnessSet().getRedeemers().get(0).setExUnits(redeemerList.get(0).getExUnits());
-
-                    System.out.println("ExUnits evaluation From Aiken:" + redeemerList);
-
+        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+        Result<String> result = quickTxBuilder.compose(tx)
+                .feePayer(senderAddress)
+                .withSigner(SignerProviders.signerFrom(sender))
+                .withTxInspector(transaction -> System.out.println(JsonUtil.getPrettyJson(transaction)))
+                .withTxEvaluator(new AikenTransactionEvaluator(backendService))
+                .postBalanceTx((context, txn) -> {
+                    //Remove all script witness sets as we are using reference inptuts
                     txn.getWitnessSet().getPlutusV2Scripts().clear();
-                })
-                .andThen(BalanceTxBuilders.balanceTx(senderAddress, 2));
-
-        TxBuilderContext txBuilderContext = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier);
-
-        //Tx Build and Submit
-        TxSigner signer = SignerProviders.signerFrom(sender);
-
-        Transaction signedTx = txBuilderContext
-                .buildAndSign(contractTxBuilder, signer);
-
-        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
+                }).completeAndWait(System.out::println);
 
         System.out.println("Unlock Tx: " + result);
-
         Assertions.assertTrue(result.isSuccessful());
-        waitForTransaction(result);
     }
 
     private void lockFundWithInlineDatum(String scriptAddress, PlutusData datum) throws ApiException, CborSerializationException {
-        Output lockOutput = Output.builder()
-                .address(scriptAddress)
-                .assetName(CardanoConstants.LOVELACE)
-                .qty(adaToLovelace(4))
-                .datum(datum)
-                .inlineDatum(true).build();
+        Tx tx = new Tx()
+                .payToContract(scriptAddress, Amount.ada(4.0), datum)
+                .from(senderAddress);
 
-        TxBuilder lockFundTxBuilder = lockOutput.outputBuilder()
-                .buildInputs(InputBuilders.createFromSender(senderAddress, senderAddress))
-                .andThen(BalanceTxBuilders.balanceTx(senderAddress, 1));
+        QuickTxBuilder quickTxBuilder  = new QuickTxBuilder(backendService);
+        Result<String> result = quickTxBuilder.compose(tx)
+                .withSigner(SignerProviders.signerFrom(sender))
+                .completeAndWait(System.out::println);
 
-        Transaction signedTx = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
-                .buildAndSign(lockFundTxBuilder, SignerProviders.signerFrom(sender));
+       System.out.println("Lock Tx: " + result);
+       Assertions.assertTrue(result.isSuccessful());
 
-        Result<String> result = backendService.getTransactionService().submitTransaction(signedTx.serialize());
-        System.out.println("Lock Tx: " + result);
-
-        Assertions.assertTrue(result.isSuccessful());
-        waitForTransaction(result);
+       checkIfUtxoAvailable(result.getValue(), scriptAddress);
     }
 
-    private void waitForTransaction(Result<String> result) {
-        try {
-            if (result.isSuccessful()) { //Wait for transaction to be mined
-                int count = 0;
-                while (count < 60) {
-                    Result<TransactionContent> txnResult = backendService.getTransactionService().getTransaction(result.getValue());
-                    if (txnResult.isSuccessful()) {
-                        System.out.println(JsonUtil.getPrettyJson(txnResult.getValue()));
-                        break;
-                    } else {
-                        System.out.println("Waiting for transaction to be mined ....");
-                    }
-
-                    count++;
-                    Thread.sleep(2000);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    protected void checkIfUtxoAvailable(String txHash, String address) {
+        Optional<Utxo> utxo = Optional.empty();
+        int count = 0;
+        while (utxo.isEmpty()) {
+            if (count++ >= 20)
+                break;
+            List<Utxo> utxos = new DefaultUtxoSupplier(backendService.getUtxoService()).getAll(address);
+            utxo = utxos.stream().filter(u -> u.getTxHash().equals(txHash))
+                    .findFirst();
+            System.out.println("Try to get new output... txhash: " + txHash);
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {}
         }
     }
-
 }
