@@ -31,3 +31,5 @@ jobs:
         run: chmod +x gradlew
       - name: Integration tests with Gradle
         run: ./gradlew clean integrationTest --stacktrace
+        env:
+          BF_PROJECT_ID: ${{ secrets.BF_PROJECT_ID }}
