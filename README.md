@@ -9,7 +9,7 @@ It uses [aiken-jna-wrapper](https://github.com/bloxbean/aiken-jna-wrapper) to ac
 
 **Current Version:** 
 - 0.0.5 (Compatible with [cardano-client-lib](https://github.com/bloxbean/cardano-client-lib) 0.4.3)
-- 0.0.6 (Compatible with [cardano-client-lib](https://github.com/bloxbean/cardano-client-lib) 0.5.x)
+- 0.0.7 (Compatible with [cardano-client-lib](https://github.com/bloxbean/cardano-client-lib) 0.5.x)
 
 ### Current Limitations
 - The current version doesn't work for a transaction with reference inputs. [Issue](https://github.com/bloxbean/aiken-java-binding/issues/1)
