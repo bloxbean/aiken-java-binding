@@ -13,10 +13,7 @@ import com.bloxbean.cardano.client.api.util.CostModelUtil;
 import com.bloxbean.cardano.client.backend.api.BackendService;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
-import com.bloxbean.cardano.client.plutus.spec.CostMdls;
-import com.bloxbean.cardano.client.plutus.spec.CostModel;
-import com.bloxbean.cardano.client.plutus.spec.Language;
-import com.bloxbean.cardano.client.plutus.spec.Redeemer;
+import com.bloxbean.cardano.client.plutus.spec.*;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.spec.TransactionInput;
 import com.bloxbean.cardano.client.transaction.spec.TransactionWitnessSet;
@@ -36,6 +33,7 @@ import static com.bloxbean.cardano.client.plutus.spec.Language.PLUTUS_V2;
 public class AikenTransactionEvaluator implements TransactionEvaluator {
     private UtxoSupplier utxoSupplier;
     private ProtocolParamsSupplier protocolParamsSupplier;
+    private ScriptSupplier scriptSupplier;
 
     /**
      * Constructor
@@ -49,13 +47,37 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
 
     /**
      * Constructor
+     * @param backendService Backend service
+     * @param scriptSupplier Script supplier to provide additional scripts (e.g; scripts in reference inputs) to evaluate
+     */
+    public AikenTransactionEvaluator(@NonNull BackendService backendService, ScriptSupplier scriptSupplier) {
+        this.utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
+        this.protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
+        this.scriptSupplier = scriptSupplier;
+    }
+
+    /**
+     * Constructor
      *
      * @param utxoSupplier           Utxo supplier
      * @param protocolParamsSupplier Protocol params supplier
      */
-    public AikenTransactionEvaluator(UtxoSupplier utxoSupplier, ProtocolParamsSupplier protocolParamsSupplier) {
+    public AikenTransactionEvaluator(@NonNull UtxoSupplier utxoSupplier, @NonNull ProtocolParamsSupplier protocolParamsSupplier) {
         this.utxoSupplier = utxoSupplier;
         this.protocolParamsSupplier = protocolParamsSupplier;
+    }
+
+    /**
+     * Constructor
+     * @param utxoSupplier Utxo supplier
+     * @param protocolParamsSupplier Protocol params supplier
+     * @param scriptSupplier Script supplier to provide additional scripts (e.g; scripts in reference inputs) to evaluate
+     */
+    public AikenTransactionEvaluator(@NonNull UtxoSupplier utxoSupplier, @NonNull ProtocolParamsSupplier protocolParamsSupplier,
+                                     ScriptSupplier scriptSupplier) {
+        this.utxoSupplier = utxoSupplier;
+        this.protocolParamsSupplier = protocolParamsSupplier;
+        this.scriptSupplier = scriptSupplier;
     }
 
     @Override
@@ -71,11 +93,16 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
                 utxos.add(utxo);
             }
 
+            List<PlutusScript> additionalScripts = new ArrayList<>();
             //reference inputs
             for (TransactionInput input : transaction.getBody().getReferenceInputs()) {
-                Utxo utxo = utxoSupplier.getTxOutput(input.getTransactionId(), input.getIndex())
-                        .get();
+                Utxo utxo = utxoSupplier.getTxOutput(input.getTransactionId(), input.getIndex()).get();
                 utxos.add(utxo);
+
+                //Get reference input script
+                if (utxo.getReferenceScriptHash() != null && scriptSupplier != null) {
+                    additionalScripts.add(scriptSupplier.getScript(utxo.getReferenceScriptHash()));
+                }
             }
 
             //The following initializations are required to avoid NPE in aiken-java-binding
@@ -102,7 +129,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
             costMdls.add(costModelOptional.get());
 
             TxEvaluator txEvaluator = new TxEvaluator();
-            List<Redeemer> redeemers = txEvaluator.evaluateTx(transaction, utxos, costMdls);
+            List<Redeemer> redeemers = txEvaluator.evaluateTx(transaction, utxos, additionalScripts, costMdls);
             if (redeemers == null)
                 return Result.success("Error evaluating transaction");
 
