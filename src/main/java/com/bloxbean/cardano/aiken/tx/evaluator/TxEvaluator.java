@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -107,11 +108,7 @@ public class TxEvaluator {
      * @throws TxEvaluationException if script evaluation fails
      */
     public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> inputUtxos, CostMdls costMdls) {
-        List<PlutusScript> scripts = new ArrayList<>();
-        scripts.addAll(transaction.getWitnessSet().getPlutusV1Scripts());
-        scripts.addAll(transaction.getWitnessSet().getPlutusV2Scripts());
-
-        return evaluateTx(transaction, inputUtxos, scripts, costMdls);
+        return evaluateTx(transaction, inputUtxos, Collections.emptyList(), costMdls);
     }
 
     /**
@@ -124,10 +121,17 @@ public class TxEvaluator {
      * @throws TxEvaluationException if script evaluation fails
      */
     public List<Redeemer> evaluateTx(Transaction transaction, Set<Utxo> inputUtxos, List<PlutusScript> scripts, CostMdls costMdls) {
+        List<PlutusScript> witnessScripts = new ArrayList<>();
+        witnessScripts.addAll(transaction.getWitnessSet().getPlutusV1Scripts());
+        witnessScripts.addAll(transaction.getWitnessSet().getPlutusV2Scripts());
+
+        List<PlutusScript> allScripts = scripts != null? Stream.concat(scripts.stream(), witnessScripts.stream()).collect(Collectors.toList())
+                : witnessScripts;
+
         List<TransactionInput> txInputs = transaction.getBody().getInputs();
         List<TransactionInput> refTxInputs = transaction.getBody().getReferenceInputs();
         List<TransactionInput> allInputs = Stream.concat(txInputs.stream(),refTxInputs.stream()).collect(Collectors.toList());
-        List<TransactionOutput> txOutputs = resolveTxInputs(allInputs, inputUtxos, scripts);
+        List<TransactionOutput> txOutputs = resolveTxInputs(allInputs, inputUtxos, allScripts);
 
         try {
             String costMdlsHex = encodeHexString(CborSerializationUtil.serialize(costMdls.serialize()));
@@ -158,6 +162,7 @@ public class TxEvaluator {
                 return deserializeRedeemerArray(node.get("redeemer_cbor").asText());
             }
 
+            log.error("TxEvaluation failed. Error: " + node.get("error").asText());
             throw new TxEvaluationException(node.get("error").asText());
         } catch (TxEvaluationException e) {
             throw e;

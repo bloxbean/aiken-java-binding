@@ -1,22 +1,13 @@
 package com.bloxbean.cardano.aiken.tx.evaluator;
 
 import com.bloxbean.cardano.aiken.AikenTransactionEvaluator;
-import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.address.AddressProvider;
-import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
-import com.bloxbean.cardano.client.api.UtxoSupplier;
-import com.bloxbean.cardano.client.api.exception.ApiException;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.client.backend.api.BackendService;
-import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
-import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
-import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.common.CardanoConstants;
 import com.bloxbean.cardano.client.common.model.Networks;
-import com.bloxbean.cardano.client.exception.CborSerializationException;
 import com.bloxbean.cardano.client.function.helper.ScriptUtxoFinders;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.plutus.spec.BigIntPlutusData;
@@ -35,20 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 //The caller has to guess the sum of 0..datum_value to claim the locked fund.
-public class GuessSumContractIntegrationTest {
-
-    String senderMnemonic = "kit color frog trick speak employ suit sort bomb goddess jewel primary spoil fade person useless measure manage warfare reduce few scrub beyond era";
-
-    Account sender = new Account(Networks.testnet(), senderMnemonic);
-
-    String senderAddress = sender.baseAddress();
-
-//    BackendService backendService = new KoiosBackendService(com.bloxbean.cardano.client.backend.koios.Constants.KOIOS_PREPROD_URL);
-    BackendService backendService = new BFBackendService(Constants.BLOCKFROST_PREPROD_URL, System.getenv("BF_PROJECT_ID"));
-    private UtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
-
-    private ProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
-
+public class GuessSumContractIntegrationTest extends BaseTest {
     @Test
     public void invokeContract() throws Exception {
         System.out.println("Sender address:" + senderAddress);
@@ -69,7 +47,7 @@ public class GuessSumContractIntegrationTest {
 
         //3. Claim fund by guessing the sum
         //Get script utxo
-        Utxo scriptUtxo = ScriptUtxoFinders.findFirstByDatumHashUsingDatum(utxoSupplier, scriptAddress, datum).orElseThrow();
+        Utxo scriptUtxo = ScriptUtxoFinders.findFirstByInlineDatum(utxoSupplier, scriptAddress, datum).orElseThrow();
         BigInteger claimAmount = scriptUtxo
                 .getAmount().stream().filter(amount -> CardanoConstants.LOVELACE.equals(amount.getUnit()))
                 .findFirst()
@@ -78,27 +56,23 @@ public class GuessSumContractIntegrationTest {
         //Get reference input
         TransactionInput refInput = new TransactionInput("5a47b9a4276362000566ac5e58c18f315440a78a8cb0a8d1fe066e0012bcfbab", 0);
         ScriptTx tx = new ScriptTx()
-                .payToAddress(senderAddress, Amount.lovelace(claimAmount))
+                .payToAddress(senderAddress2, Amount.lovelace(claimAmount))
                 .collectFrom(scriptUtxo, BigIntPlutusData.of(36))
-                .readFrom(refInput.getTransactionId(), refInput.getIndex())
-                .attachSpendingValidator(sumScript);
+                .readFrom(refInput.getTransactionId(), refInput.getIndex());
 
         QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
         Result<String> result = quickTxBuilder.compose(tx)
-                .feePayer(senderAddress)
-                .withSigner(SignerProviders.signerFrom(sender))
+                .feePayer(senderAddress2)
+                .withSigner(SignerProviders.signerFrom(sender2))
                 .withTxInspector(transaction -> System.out.println(JsonUtil.getPrettyJson(transaction)))
-                .withTxEvaluator(new AikenTransactionEvaluator(backendService))
-                .postBalanceTx((context, txn) -> {
-                    //Remove all script witness sets as we are using reference inptuts
-                    txn.getWitnessSet().getPlutusV2Scripts().clear();
-                }).completeAndWait(System.out::println);
+                .withTxEvaluator(new AikenTransactionEvaluator(backendService, (scriptHash) -> sumScript))
+                .completeAndWait(System.out::println);
 
         System.out.println("Unlock Tx: " + result);
         Assertions.assertTrue(result.isSuccessful());
     }
 
-    private void lockFundWithInlineDatum(String scriptAddress, PlutusData datum) throws ApiException, CborSerializationException {
+    private String lockFundWithInlineDatum(String scriptAddress, PlutusData datum) {
         Tx tx = new Tx()
                 .payToContract(scriptAddress, Amount.ada(4.0), datum)
                 .from(senderAddress);
@@ -112,6 +86,7 @@ public class GuessSumContractIntegrationTest {
        Assertions.assertTrue(result.isSuccessful());
 
        checkIfUtxoAvailable(result.getValue(), scriptAddress);
+       return result.getValue();
     }
 
     protected void checkIfUtxoAvailable(String txHash, String address) {

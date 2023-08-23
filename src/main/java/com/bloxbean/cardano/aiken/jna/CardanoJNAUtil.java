@@ -20,5 +20,14 @@ public class CardanoJNAUtil {
         return result;
     }
 
+    public static String apply_params_to_plutus_script(String params, String scriptCompiledCode) {
+        Pointer pointer = CardanoJNA.INSTANCE.apply_params_to_plutus_script(params, scriptCompiledCode);
+        String result = pointer.getString(0);
+
+        CardanoJNA.INSTANCE.dropCharPointer(pointer);
+
+        return result;
+    }
+
 }
 
