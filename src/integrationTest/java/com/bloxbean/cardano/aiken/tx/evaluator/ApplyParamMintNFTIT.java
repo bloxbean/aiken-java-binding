@@ -99,7 +99,7 @@ public class ApplyParamMintNFTIT extends BaseTest {
                 .withSigner(SignerProviders.signerFrom(sender))
                 .withTxEvaluator(new AikenTransactionEvaluator(backendService))
                 .preBalanceTx((context, txn) -> {
-                    //Remove the spend redeemer as it's not required for minting
+                    //Remove the extra spend redeemer as it's not required for minting
                     txn.getWitnessSet().getRedeemers().removeIf(redeemer -> redeemer.getTag() == RedeemerTag.Spend);
                 }).withTxInspector(transaction -> {
                     System.out.println(transaction);
