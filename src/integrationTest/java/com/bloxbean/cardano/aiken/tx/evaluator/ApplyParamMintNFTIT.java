@@ -90,7 +90,7 @@ public class ApplyParamMintNFTIT extends BaseTest {
 
         PlutusData mintAction = ConstrPlutusData.of(0);
         ScriptTx scriptTx = new ScriptTx()
-                .collectFrom(utxo, PlutusData.unit())
+                .collectFrom(utxo, PlutusData.unit()) //This is a workaround for now as we need to pass redeemer data to include the utxo. This will be fixed in the next release
                 .mintAsset(giftPlutusScript, new Asset(tokenName, BigInteger.valueOf(1)), mintAction, senderAddress);
 
         Result<String> result = new QuickTxBuilder(backendService)
@@ -99,6 +99,7 @@ public class ApplyParamMintNFTIT extends BaseTest {
                 .withSigner(SignerProviders.signerFrom(sender))
                 .withTxEvaluator(new AikenTransactionEvaluator(backendService))
                 .preBalanceTx((context, txn) -> {
+                    //Remove the spend redeemer as it's not required for minting
                     txn.getWitnessSet().getRedeemers().removeIf(redeemer -> redeemer.getTag() == RedeemerTag.Spend);
                 }).withTxInspector(transaction -> {
                     System.out.println(transaction);
