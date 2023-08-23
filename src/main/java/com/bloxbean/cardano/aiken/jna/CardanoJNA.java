@@ -10,12 +10,30 @@ interface CardanoJNA extends Library {
     CardanoJNA INSTANCE = Native.load(LibraryUtil.getAikenWrapperLib(),
             CardanoJNA.class);
 
+    /**
+     * Evaluate script cost
+     * @param txBytes
+     * @param inputs
+     * @param outputs
+     * @param costMdlsBytes
+     * @param initialBudgetConfig
+     * @param slotConfig
+     * @return
+     */
     Pointer eval_phase_two(String txBytes,
                            String inputs,
                            String outputs,
                            String costMdlsBytes,
                            InitialBudgetConfig.InitialBudgetByValue initialBudgetConfig,
                            SlotConfig.SlotConfigByReference slotConfig);
+
+    /**
+     * Apply params to plutus script
+     * @param params
+     * @param scriptCompiledCode
+     * @return
+     */
+    Pointer apply_params_to_plutus_script(String params, String scriptCompiledCode);
 
     void dropCharPointer(Pointer pointer);
 }
