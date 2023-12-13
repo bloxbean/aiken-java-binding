@@ -8,7 +8,7 @@ mkdir -p native/darwin-x86-64
 mkdir -p native/win32-x86-64
 mkdir -p native/win32-aarch64
 
-echo $tag >> native/version
+echo $tag > native/version
 
 echo "Downloading linux-x86-64"
 wget https://github.com/bloxbean/aiken-jna-wrapper/releases/download/$tag/linux-x86-64_libaiken_jna_wrapper.so -O native/linux-x86-64/libaiken_jna_wrapper.so

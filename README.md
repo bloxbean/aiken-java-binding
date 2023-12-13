@@ -20,7 +20,6 @@ It uses [aiken-jna-wrapper](https://github.com/bloxbean/aiken-jna-wrapper) to ac
 - Apple MacOS (Intel and Apple Silicon)
 - Linux (x86_64) (Ubuntu 20.04 or compatible ...)
 - Windows 64bits (x86_64)
-- 
 
 For another platform, please create a PR / request [here](https://github.com/bloxbean/aiken-jna-wrapper/issues)
 
@@ -49,7 +48,7 @@ You also need to provide ``cardano-client-lib`` and ``jna`` dependencies if not 
 <dependency>
    <groupId>com.bloxbean.cardano</groupId>
    <artifactId>cardano-client-lib</artifactId>
-   <version>0.4.3</version>
+   <version>0.5.0</version>
 </dependency>
 <dependency>
    <groupId>net.java.dev.jna</groupId>
