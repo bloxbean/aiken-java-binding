@@ -13,6 +13,8 @@ import com.bloxbean.cardano.client.api.util.CostModelUtil;
 import com.bloxbean.cardano.client.backend.api.BackendService;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
+import com.bloxbean.cardano.client.common.model.SlotConfig;
+import com.bloxbean.cardano.client.common.model.SlotConfigs;
 import com.bloxbean.cardano.client.plutus.spec.*;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.spec.TransactionInput;
@@ -34,6 +36,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
     private UtxoSupplier utxoSupplier;
     private ProtocolParamsSupplier protocolParamsSupplier;
     private ScriptSupplier scriptSupplier;
+    private final SlotConfig slotConfig;
 
     /**
      * Constructor
@@ -41,8 +44,19 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
      * @param backendService Backend service
      */
     public AikenTransactionEvaluator(@NonNull BackendService backendService) {
+        this(backendService, SlotConfigs.mainnet());
+    }
+
+    /**
+     * Constructor
+     *
+     * @param backendService Backend service
+     * @param slotConfig the slot config to use, useful for non-mainnet network tx evaluation
+     */
+    public AikenTransactionEvaluator(@NonNull BackendService backendService, SlotConfig slotConfig) {
         this.utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
         this.protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
+        this.slotConfig = slotConfig;
     }
 
     /**
@@ -54,6 +68,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
         this.utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
         this.protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
         this.scriptSupplier = scriptSupplier;
+        this.slotConfig = SlotConfigs.mainnet();
     }
 
     /**
@@ -65,6 +80,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
     public AikenTransactionEvaluator(@NonNull UtxoSupplier utxoSupplier, @NonNull ProtocolParamsSupplier protocolParamsSupplier) {
         this.utxoSupplier = utxoSupplier;
         this.protocolParamsSupplier = protocolParamsSupplier;
+        this.slotConfig = SlotConfigs.mainnet();
     }
 
     /**
@@ -75,9 +91,23 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
      */
     public AikenTransactionEvaluator(@NonNull UtxoSupplier utxoSupplier, @NonNull ProtocolParamsSupplier protocolParamsSupplier,
                                      ScriptSupplier scriptSupplier) {
+        this(utxoSupplier, protocolParamsSupplier, scriptSupplier, SlotConfigs.mainnet());
+    }
+
+
+    /**
+     * Constructor
+     * @param utxoSupplier Utxo supplier
+     * @param protocolParamsSupplier Protocol params supplier
+     * @param scriptSupplier Script supplier to provide additional scripts (e.g; scripts in reference inputs) to evaluate
+     * * @param slotConfig the slot config to use, useful for non-mainnet network tx evaluation
+     */
+    public AikenTransactionEvaluator(@NonNull UtxoSupplier utxoSupplier, @NonNull ProtocolParamsSupplier protocolParamsSupplier,
+                                     ScriptSupplier scriptSupplier, SlotConfig slotConfig) {
         this.utxoSupplier = utxoSupplier;
         this.protocolParamsSupplier = protocolParamsSupplier;
         this.scriptSupplier = scriptSupplier;
+        this.slotConfig = slotConfig;
     }
 
     @Override
@@ -128,7 +158,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
             CostMdls costMdls = new CostMdls();
             costMdls.add(costModelOptional.get());
 
-            TxEvaluator txEvaluator = new TxEvaluator();
+            TxEvaluator txEvaluator = new TxEvaluator(geSlotConfig());
             List<Redeemer> redeemers = txEvaluator.evaluateTx(transaction, utxos, additionalScripts, costMdls);
             if (redeemers == null)
                 return Result.success("Error evaluating transaction");
@@ -142,5 +172,13 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
         } catch (Exception e) {
             throw new ApiException("Error evaluating transaction", e);
         }
+    }
+
+    private com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig geSlotConfig() {
+        com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig.SlotConfigByReference slotConfig = new com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig.SlotConfigByReference();
+        slotConfig.zero_time = this.slotConfig.getZeroTime();
+        slotConfig.zero_slot = this.slotConfig.getZeroSlot();
+        slotConfig.slot_length = this.slotConfig.getSlotLength();
+        return slotConfig;
     }
 }

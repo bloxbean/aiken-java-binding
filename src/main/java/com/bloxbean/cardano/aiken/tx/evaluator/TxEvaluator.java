@@ -66,6 +66,29 @@ public class TxEvaluator {
         this.initialBudgetConfig.cpu = initialBudgetConfig.cpu;
     }
 
+        /**
+     * Construct instance of TxEvaluator with an initial transaction budget config.
+     * Those values are typically present on protocol-parameters.json.
+     *
+     * "maxTxExecutionUnits": {
+     *   "memory": 14000000,
+     *   "steps": 10000000000
+     *  }
+     *
+     *  Typical scenario to override those values is where one uses L2 solution, e.g. Hydra
+     *  with custom config or custom dev network (e.g. using yaci-devkit).
+     *
+     * @param initialBudgetConfig max transaction execution units
+     */
+    public TxEvaluator(SlotConfig slotConfig) {
+        this.slotConfig = new SlotConfig.SlotConfigByReference();
+        this.slotConfig.zero_slot = slotConfig.zero_slot;
+        this.slotConfig.zero_time = slotConfig.zero_time;
+        this.slotConfig.slot_length = slotConfig.slot_length;
+
+        this.initialBudgetConfig = getDefaultInitialBudgetConfig();
+    }
+
     /**
      * Construct instance of TxEvaluator with an initial transaction budget config.
      * Those values are typically present on
