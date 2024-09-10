@@ -39,7 +39,9 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
     private final SlotConfig slotConfig;
 
     /**
-     * Constructor
+     * Constructor for mainnet.
+     * Use AikenTransactionEvaluator(@NonNull BackendService backendService, SlotConfig slotConfig)
+     * if you need to run TransactionEvaluation for any non-mainnet network instead
      *
      * @param backendService Backend service
      */
@@ -158,7 +160,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
             CostMdls costMdls = new CostMdls();
             costMdls.add(costModelOptional.get());
 
-            TxEvaluator txEvaluator = new TxEvaluator(geSlotConfig());
+            TxEvaluator txEvaluator = new TxEvaluator(getSlotConfig());
             List<Redeemer> redeemers = txEvaluator.evaluateTx(transaction, utxos, additionalScripts, costMdls);
             if (redeemers == null)
                 return Result.success("Error evaluating transaction");
@@ -174,7 +176,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
         }
     }
 
-    private com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig geSlotConfig() {
+    private com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig getSlotConfig() {
         com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig.SlotConfigByReference slotConfig = new com.bloxbean.cardano.aiken.tx.evaluator.SlotConfig.SlotConfigByReference();
         slotConfig.zero_time = this.slotConfig.getZeroTime();
         slotConfig.zero_slot = this.slotConfig.getZeroSlot();
