@@ -65,7 +65,7 @@ public class GuessSumContractIntegrationTest extends BaseTest {
                 .feePayer(senderAddress2)
                 .withSigner(SignerProviders.signerFrom(sender2))
                 .withTxInspector(transaction -> System.out.println(JsonUtil.getPrettyJson(transaction)))
-                .withTxEvaluator(new AikenTransactionEvaluator(backendService, (scriptHash) -> sumScript))
+                .withTxEvaluator(new AikenTransactionEvaluator(backendService, (scriptHash) -> Optional.of(sumScript)))
                 .completeAndWait(System.out::println);
 
         System.out.println("Unlock Tx: " + result);
