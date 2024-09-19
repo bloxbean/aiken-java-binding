@@ -18,6 +18,7 @@ import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.spec.TransactionInput;
 import com.bloxbean.cardano.client.transaction.spec.TransactionWitnessSet;
 import com.bloxbean.cardano.client.util.JsonUtil;
+import com.bloxbean.cardano.client.api.ScriptSupplier;
 import lombok.NonNull;
 
 import java.util.*;
@@ -101,7 +102,7 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
 
                 //Get reference input script
                 if (utxo.getReferenceScriptHash() != null && scriptSupplier != null) {
-                    additionalScripts.add(scriptSupplier.getScript(utxo.getReferenceScriptHash()));
+                    scriptSupplier.getScript(utxo.getReferenceScriptHash()).ifPresent(additionalScripts::add);
                 }
             }
 
