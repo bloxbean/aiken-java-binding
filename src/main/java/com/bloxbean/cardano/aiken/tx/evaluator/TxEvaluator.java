@@ -78,7 +78,7 @@ public class TxEvaluator {
      *  Typical scenario to override those values is where one uses L2 solution, e.g. Hydra
      *  with custom config or custom dev network (e.g. using yaci-devkit).
      *
-     * @param initialBudgetConfig max transaction execution units
+     * @param slotConfig - slot config values as specified during shelley genesis era
      */
     public TxEvaluator(SlotConfig slotConfig) {
         this.slotConfig = new SlotConfig.SlotConfigByReference();
