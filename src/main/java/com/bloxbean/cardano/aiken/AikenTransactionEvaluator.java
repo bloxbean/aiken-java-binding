@@ -26,8 +26,7 @@ import lombok.NonNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.bloxbean.cardano.client.plutus.spec.Language.PLUTUS_V1;
-import static com.bloxbean.cardano.client.plutus.spec.Language.PLUTUS_V2;
+import static com.bloxbean.cardano.client.plutus.spec.Language.*;
 
 /**
  * Implements TransactionEvaluator to evaluate a transaction to get script costs using Aiken evaluator.
@@ -148,18 +147,49 @@ public class AikenTransactionEvaluator implements TransactionEvaluator {
             if (transaction.getWitnessSet().getPlutusV2Scripts() == null)
                 transaction.getWitnessSet().setPlutusV2Scripts(new ArrayList<>());
 
-            Language language =
-                    (transaction.getWitnessSet() != null && transaction.getWitnessSet().getPlutusV1Scripts() != null
-                            && transaction.getWitnessSet().getPlutusV1Scripts().size() > 0) ?
-                            PLUTUS_V1 : PLUTUS_V2;
+            var languages = new HashSet<Language>();
+            //check plutus v1 present
+            if (transaction.getWitnessSet() != null
+                    && transaction.getWitnessSet().getPlutusV1Scripts() != null
+                    && transaction.getWitnessSet().getPlutusV1Scripts().size() > 0) {
+                languages.add(PLUTUS_V1);
+            }
+
+            //check plutus v2 present
+            if (transaction.getWitnessSet() != null
+                    && transaction.getWitnessSet().getPlutusV2Scripts() != null
+                    && transaction.getWitnessSet().getPlutusV2Scripts().size() > 0) {
+                languages.add(PLUTUS_V2);
+            }
+
+            //check if plutus v3 present
+            if (transaction.getWitnessSet() != null
+                    && transaction.getWitnessSet().getPlutusV3Scripts() != null
+                    && transaction.getWitnessSet().getPlutusV3Scripts().size() > 0) {
+                languages.add(PLUTUS_V3);
+            }
+
+            //Check in reference scripts
+            for (PlutusScript script : additionalScripts) {
+                if (script == null)
+                    continue;
+                if (script.getLanguage() == PLUTUS_V1) {
+                    languages.add(PLUTUS_V1);
+                } else if (script.getLanguage() == PLUTUS_V2) {
+                    languages.add(PLUTUS_V2);
+                } else if (script.getLanguage() == PLUTUS_V3) {
+                    languages.add(PLUTUS_V3);
+                } else {
+                    throw new ApiException("Unsupported language: " + script.getLanguage());
+                }
+            }
+
             ProtocolParams protocolParams = protocolParamsSupplier.getProtocolParams();
-            Optional<CostModel> costModelOptional =
-                    CostModelUtil.getCostModelFromProtocolParams(protocolParams, language);
-            if (!costModelOptional.isPresent())
-                throw new ApiException("Cost model not found for language: " + language);
 
             CostMdls costMdls = new CostMdls();
-            costMdls.add(costModelOptional.get());
+            languages.stream().map(language -> CostModelUtil.getCostModelFromProtocolParams(protocolParams, language))
+                    .filter(Optional::isPresent)
+                    .forEach(costModelOptional -> costMdls.add(costModelOptional.get()));
 
             TxEvaluator txEvaluator = new TxEvaluator(getSlotConfig());
             List<Redeemer> redeemers = txEvaluator.evaluateTx(transaction, utxos, additionalScripts, costMdls);

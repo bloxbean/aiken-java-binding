@@ -5,7 +5,6 @@ import com.bloxbean.cardano.client.address.AddressProvider;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
 import com.bloxbean.cardano.client.common.CardanoConstants;
 import com.bloxbean.cardano.client.common.model.Networks;
 import com.bloxbean.cardano.client.function.helper.ScriptUtxoFinders;
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Optional;
 
 //The caller has to guess the sum of 0..datum_value to claim the locked fund.
@@ -87,21 +85,5 @@ public class GuessSumContractIntegrationTest extends BaseTest {
 
        checkIfUtxoAvailable(result.getValue(), scriptAddress);
        return result.getValue();
-    }
-
-    protected void checkIfUtxoAvailable(String txHash, String address) {
-        Optional<Utxo> utxo = Optional.empty();
-        int count = 0;
-        while (utxo.isEmpty()) {
-            if (count++ >= 20)
-                break;
-            List<Utxo> utxos = new DefaultUtxoSupplier(backendService.getUtxoService()).getAll(address);
-            utxo = utxos.stream().filter(u -> u.getTxHash().equals(txHash))
-                    .findFirst();
-            System.out.println("Try to get new output... txhash: " + txHash);
-            try {
-                Thread.sleep(1000);
-            } catch (Exception e) {}
-        }
     }
 }
