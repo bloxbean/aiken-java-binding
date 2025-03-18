@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tag=v0.6.0
+tag=v0.7.0
 
 mkdir -p native/linux-x86-64
 mkdir -p native/darwin-aarch64
