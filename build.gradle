@@ -14,7 +14,7 @@ dependencies {
     implementation group: 'net.java.dev.jna', name: 'jna', version: '5.15.0'
     implementation group: 'net.java.dev.jna', name: 'jna-platform', version: '5.15.0'
 
-    compileOnly group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.6.0'
+    compileOnly group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.6.3'
 
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
@@ -28,9 +28,9 @@ dependencies {
     testImplementation('org.assertj:assertj-core:3.24.2')
     testRuntimeOnly 'org.slf4j:slf4j-log4j12:2.0.5'
 
-    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.6.0'
-    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-koios', version: '0.6.0'
-    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-blockfrost', version: '0.6.0'
+    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-lib', version: '0.6.3'
+    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-koios', version: '0.6.3'
+    testImplementation group: 'com.bloxbean.cardano', name: 'cardano-client-backend-blockfrost', version: '0.6.3'
 
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
