@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 //The caller has to guess the sum of 0..datum_value to claim the locked fund.
 public class GuessSumContractIntegrationTest extends BaseTest {
     @Test
@@ -36,6 +38,19 @@ public class GuessSumContractIntegrationTest extends BaseTest {
                         .build();
         String scriptAddress = AddressProvider.getEntAddress(sumScript, Networks.testnet()).toBech32();
         System.out.println("Script address:" + scriptAddress);
+
+        //Create Reference Input Tx
+        Tx refInputTx = new Tx()
+                .payToContract(scriptAddress, Amount.ada(1), PlutusData.unit(), sumScript)
+                .from(senderAddress);
+
+        var refInputTxCreateResult = new QuickTxBuilder(backendService)
+                .compose(refInputTx)
+                .withSigner(SignerProviders.signerFrom(sender))
+                .completeAndWait(System.out::println);
+
+        assertThat(refInputTxCreateResult.isSuccessful());
+        checkIfUtxoAvailable(refInputTxCreateResult.getValue(), scriptAddress);
 
         // 2. Lock fund with a datum (inlineDatum)
         PlutusData datum = BigIntPlutusData.of(8);
@@ -52,7 +67,7 @@ public class GuessSumContractIntegrationTest extends BaseTest {
                 .orElseThrow().getQuantity();
 
         //Get reference input
-        TransactionInput refInput = new TransactionInput("5a47b9a4276362000566ac5e58c18f315440a78a8cb0a8d1fe066e0012bcfbab", 0);
+        TransactionInput refInput = new TransactionInput(refInputTxCreateResult.getValue(), 0);
         ScriptTx tx = new ScriptTx()
                 .payToAddress(senderAddress2, Amount.lovelace(claimAmount))
                 .collectFrom(scriptUtxo, BigIntPlutusData.of(36))
