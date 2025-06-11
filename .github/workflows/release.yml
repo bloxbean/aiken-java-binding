@@ -24,47 +24,43 @@ jobs:
           echo "${{secrets.SIGNING_KEY}}" > ~/.gradle/secring.gpg.b64
           base64 -d ~/.gradle/secring.gpg.b64 > ~/.gradle/secring.gpg
       - name: Publish package
-        run: ./gradlew publishToSonatype closeStagingRepositories -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} -Psigning.password=${{ secrets.SIGNING_PASSWORD }} -Psigning.secretKeyRingFile=$(echo ~/.gradle/secring.gpg) --warn --stacktrace
+        run: ./gradlew publishToSonatype closeSonatypeStagingRepository -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} -Psigning.password=${{ secrets.SIGNING_PASSWORD }} -Psigning.secretKeyRingFile=$(echo ~/.gradle/secring.gpg) --warn --stacktrace
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-#      - name: Close And Release Repository
-#        run: ./gradlew closeAndReleaseRepository
+
+#  verify:
+#    name: Verify Staged Release
+#    runs-on: ubuntu-latest
+#    needs: publish-and-close
+#    steps:
+#      - uses: actions/checkout@v4
+#      # Example checks you can add here:
+#      # - Run dependency scanner (osv-scanner)
+#      # - Run license checks
+#      # - Run static code analysis
+#
+#      - name: Dummy check (replace with real checks)
+#        run: |
+#          echo "Run your security / quality checks here."
+#
+#  release:
+#    name: Release Staging Repo
+#    environment: maven-central-release
+#    runs-on: ubuntu-latest
+#    needs: verify
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up JDK 11
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '11'
+#          distribution: 'temurin'
+#
+#      - name: Release Staging Repo
 #        env:
 #          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-#          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-  verify:
-    name: Verify Staged Release
-    runs-on: ubuntu-latest
-    needs: publish-and-close
-    steps:
-      - uses: actions/checkout@v4
-      # Example checks you can add here:
-      # - Run dependency scanner (osv-scanner)
-      # - Run license checks
-      # - Run static code analysis
-
-      - name: Dummy check (replace with real checks)
-        run: |
-          echo "Run your security / quality checks here."
-
-  release:
-    name: Release Staging Repo
-    environment: maven-central-release
-    runs-on: ubuntu-latest
-    needs: verify
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-
-      - name: Release Staging Repo
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: |
-          ./gradlew releaseStagingRepositories
+#          MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+#        run: |
+#          ./gradlew releaseSonatypeStagingRepository

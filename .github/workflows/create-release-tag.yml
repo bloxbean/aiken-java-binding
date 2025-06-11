@@ -1,0 +1,51 @@
+name: Create Release Tag from gradle.properties
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-tag:
+    name: Create and Push v<version> Tag
+    environment: maven-central-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read version from gradle.properties
+        id: get_version
+        run: |
+          VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check that version is not a SNAPSHOT
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "Checking version: $VERSION"
+          if [[ "$VERSION" =~ -SNAPSHOT$ ]]; then
+            echo "❌ Refusing to create tag for SNAPSHOT version: $VERSION"
+            exit 1
+          fi
+          echo "✅ Version is valid for release."
+
+      - name: Check if tag already exists
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG="v$VERSION"
+          echo "Checking if tag $TAG already exists..."
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG"; then
+            echo "❌ Tag $TAG already exists on remote. Aborting."
+            exit 1
+          fi
+          echo "✅ Tag does not exist yet."
+
+      - name: Create and push v${{ steps.get_version.outputs.version }} tag
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG="v$VERSION"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
